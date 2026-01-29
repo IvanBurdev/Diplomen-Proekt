@@ -9,7 +9,7 @@ interface ProductsPageProps {
     search?: string
     sort?: string
     sizes?: string
-    colors?: string
+
     minPrice?: string
     maxPrice?: string
     featured?: string
@@ -33,7 +33,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     .gt('stock', 0)
 
   // Apply filters
-  if (params.category) {
+  if (params.category && params.category !== 'all-kits') {
     const { data: category } = await supabase
       .from('categories')
       .select('id')
@@ -42,6 +42,17 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     
     if (category) {
       query = query.eq('category_id', category.id)
+    }
+  } else if (params.category === 'all-kits') {
+    // For "all-kits", show products from home-kits, away-kits, and third-kits categories
+    const { data: kitCategories } = await supabase
+      .from('categories')
+      .select('id')
+      .in('slug', ['home-kits', 'away-kits', 'third-kits'])
+    
+    if (kitCategories && kitCategories.length > 0) {
+      const categoryIds = kitCategories.map(cat => cat.id)
+      query = query.in('category_id', categoryIds)
     }
   }
 
@@ -65,8 +76,6 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     const sizes = params.sizes.split(',')
     query = query.overlaps('sizes', sizes)
   }
-
-  // Colors filter removed - not in schema
 
   // Apply sorting
   switch (params.sort) {

@@ -85,7 +85,7 @@ export default async function OrdersPage() {
                         {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                       </Badge>
                       <p className="mt-1 font-heading font-bold text-foreground">
-                        ${order.total_amount.toFixed(2)}
+                        ${order.total.toFixed(2)}
                       </p>
                     </div>
                     <ChevronRight className="h-5 w-5 text-muted-foreground" />

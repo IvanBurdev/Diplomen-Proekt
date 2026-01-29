@@ -8,7 +8,6 @@ import { Search, SlidersHorizontal, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -31,7 +30,6 @@ interface ProductFiltersProps {
 }
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
-const COLORS = ['White', 'Black', 'Red', 'Blue', 'Green', 'Yellow', 'Navy', 'Orange']
 
 export function ProductFilters({ categories }: ProductFiltersProps) {
   const router = useRouter()
@@ -43,7 +41,6 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
   const currentSearch = searchParams.get('search') || ''
   const currentSort = searchParams.get('sort') || 'newest'
   const currentSizes = searchParams.get('sizes')?.split(',').filter(Boolean) || []
-  const currentColors = searchParams.get('colors')?.split(',').filter(Boolean) || []
   const currentMinPrice = Number(searchParams.get('minPrice')) || 0
   const currentMaxPrice = Number(searchParams.get('maxPrice')) || 500
 
@@ -78,13 +75,6 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
     updateFilters({ sizes: newSizes.length > 0 ? newSizes.join(',') : null })
   }
 
-  const toggleColor = (color: string) => {
-    const newColors = currentColors.includes(color)
-      ? currentColors.filter(c => c !== color)
-      : [...currentColors, color]
-    updateFilters({ colors: newColors.length > 0 ? newColors.join(',') : null })
-  }
-
   const applyPriceRange = () => {
     updateFilters({
       minPrice: priceRange[0] > 0 ? priceRange[0].toString() : null,
@@ -99,7 +89,7 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
   }
 
   const hasActiveFilters = currentCategory || currentSearch || currentSizes.length > 0 || 
-    currentColors.length > 0 || currentMinPrice > 0 || currentMaxPrice < 500
+    currentMinPrice > 0 || currentMaxPrice < 500
 
   const FilterContent = () => (
     <div className="space-y-6">
@@ -180,28 +170,6 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
             >
               {size}
             </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Colors */}
-      <div>
-        <Label className="text-sm font-medium text-foreground">Color</Label>
-        <div className="mt-2 space-y-2">
-          {COLORS.map((color) => (
-            <div key={color} className="flex items-center gap-2">
-              <Checkbox
-                id={`color-${color}`}
-                checked={currentColors.includes(color)}
-                onCheckedChange={() => toggleColor(color)}
-              />
-              <label
-                htmlFor={`color-${color}`}
-                className="text-sm text-foreground cursor-pointer"
-              >
-                {color}
-              </label>
-            </div>
           ))}
         </div>
       </div>
