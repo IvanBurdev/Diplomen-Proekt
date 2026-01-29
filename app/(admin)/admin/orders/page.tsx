@@ -1,11 +1,11 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { createBrowserClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { createBrowserClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -13,91 +13,120 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Eye, Search, Package } from "lucide-react";
-import { toast } from "sonner";
-import type { Order } from "@/lib/types";
-import { useSearchParams } from "next/navigation";
-import Loading from "./loading";
+} from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Eye, Search, Package, Loader2 } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+
+interface OrderWithProfile {
+  id: string
+  user_id: string
+  status: string
+  total: number
+  discount_amount: number
+  shipping_address: Record<string, unknown> | null
+  discount_code: string | null
+  created_at: string
+  updated_at: string
+  user_email?: string
+  user_name?: string
+}
 
 const statusColors: Record<string, string> = {
-  pending: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
-  processing: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  shipped: "bg-purple-500/10 text-purple-600 border-purple-500/20",
-  delivered: "bg-green-500/10 text-green-600 border-green-500/20",
-  cancelled: "bg-red-500/10 text-red-600 border-red-500/20",
-};
+  pending: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
+  processing: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  shipped: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+  delivered: 'bg-green-500/10 text-green-600 border-green-500/20',
+  cancelled: 'bg-red-500/10 text-red-600 border-red-500/20',
+}
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const supabase = createBrowserClient();
-  const searchParams = useSearchParams();
+  const [orders, setOrders] = useState<OrderWithProfile[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const supabase = createBrowserClient()
+  const { toast } = useToast()
 
   useEffect(() => {
-    fetchOrders();
-  }, [statusFilter]);
+    fetchOrders()
+  }, [statusFilter])
 
   async function fetchOrders() {
-    setLoading(true);
+    setLoading(true)
+    
     let query = supabase
-      .from("orders")
-      .select("*, profiles(full_name, email)")
-      .order("created_at", { ascending: false });
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-    if (statusFilter !== "all") {
-      query = query.eq("status", statusFilter);
+    if (statusFilter !== 'all') {
+      query = query.eq('status', statusFilter)
     }
 
-    const { data, error } = await query;
+    const { data: ordersData, error } = await query
 
     if (error) {
-      toast.error("Failed to load orders");
-      console.error(error);
-    } else {
-      setOrders(data || []);
+      toast({ title: 'Error', description: 'Failed to load orders', variant: 'destructive' })
+      console.error('[v0] Orders fetch error:', error)
+      setLoading(false)
+      return
     }
-    setLoading(false);
+
+    // Fetch profiles separately for each unique user_id
+    const userIds = [...new Set((ordersData || []).map(o => o.user_id))]
+    
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', userIds)
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
+
+    const ordersWithProfiles = (ordersData || []).map(order => ({
+      ...order,
+      user_email: profileMap.get(order.user_id)?.email || 'Unknown',
+      user_name: profileMap.get(order.user_id)?.full_name || 'Guest',
+    }))
+
+    setOrders(ordersWithProfiles)
+    setLoading(false)
   }
 
   async function updateOrderStatus(orderId: string, newStatus: string) {
     const { error } = await supabase
-      .from("orders")
-      .update({ status: newStatus })
-      .eq("id", orderId);
+      .from('orders')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', orderId)
 
     if (error) {
-      toast.error("Failed to update order status");
+      toast({ title: 'Error', description: 'Failed to update order status', variant: 'destructive' })
     } else {
-      toast.success("Order status updated");
-      fetchOrders();
+      toast({ title: 'Success', description: 'Order status updated' })
+      setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o))
     }
   }
 
   const filteredOrders = orders.filter(
     (order) =>
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.shipping_address?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      order.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.user_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-          <p className="text-muted-foreground">
-            Manage and track customer orders
-          </p>
+          <h1 className="font-serif text-2xl font-bold text-foreground">Orders</h1>
+          <p className="text-muted-foreground">Manage and track customer orders</p>
         </div>
       </div>
 
@@ -136,10 +165,16 @@ export default function AdminOrdersPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <Loading />
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
           ) : filteredOrders.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No orders found
+            <div className="text-center py-12">
+              <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="font-medium text-foreground">No orders found</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Orders will appear here when customers make purchases
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -162,29 +197,20 @@ export default function AdminOrdersPage() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium">
-                            {(order as any).profiles?.full_name || "Guest"}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {(order as any).profiles?.email || "N/A"}
-                          </p>
+                          <p className="font-medium">{order.user_name}</p>
+                          <p className="text-sm text-muted-foreground">{order.user_email}</p>
                         </div>
                       </TableCell>
                       <TableCell className="font-semibold">
-                        ${order.total_amount.toFixed(2)}
+                        ${order.total.toFixed(2)}
                       </TableCell>
                       <TableCell>
                         <Select
                           value={order.status}
-                          onValueChange={(value) =>
-                            updateOrderStatus(order.id, value)
-                          }
+                          onValueChange={(value) => updateOrderStatus(order.id, value)}
                         >
                           <SelectTrigger className="w-32">
-                            <Badge
-                              variant="outline"
-                              className={statusColors[order.status]}
-                            >
+                            <Badge variant="outline" className={statusColors[order.status]}>
                               {order.status}
                             </Badge>
                           </SelectTrigger>
@@ -217,5 +243,5 @@ export default function AdminOrdersPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

@@ -4,7 +4,7 @@ import React from "react"
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createBrowserClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { useToast } from '@/hooks/use-toast'
 import type { Product, Category } from '@/lib/types'
 
 interface ProductFormProps {
@@ -28,11 +28,11 @@ interface ProductFormProps {
 }
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
-const COLORS = ['White', 'Black', 'Red', 'Blue', 'Green', 'Yellow', 'Navy', 'Orange']
 
 export function ProductForm({ product, categories }: ProductFormProps) {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = createBrowserClient()
+  const { toast } = useToast()
   const isEditing = !!product
 
   const [formData, setFormData] = useState({
@@ -43,11 +43,11 @@ export function ProductForm({ product, categories }: ProductFormProps) {
     original_price: product?.original_price?.toString() || '',
     category_id: product?.category_id || '',
     image_url: product?.image_url || '',
-    stock_quantity: product?.stock_quantity?.toString() || '0',
-    is_featured: product?.is_featured || false,
-    is_active: product?.is_active ?? true,
+    team: product?.team || '',
+    season: product?.season || '',
+    stock: product?.stock?.toString() || '0',
+    featured: product?.featured || false,
     sizes: product?.sizes || [],
-    colors: product?.colors || [],
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -71,38 +71,52 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       original_price: formData.original_price ? parseFloat(formData.original_price) : null,
       category_id: formData.category_id,
       image_url: formData.image_url || null,
-      stock_quantity: parseInt(formData.stock_quantity),
-      is_featured: formData.is_featured,
-      is_active: formData.is_active,
+      team: formData.team || null,
+      season: formData.season || null,
+      stock: parseInt(formData.stock),
+      featured: formData.featured,
       sizes: formData.sizes,
-      colors: formData.colors,
     }
 
-    if (isEditing) {
+    if (isEditing && product) {
       const { error } = await supabase
         .from('products')
         .update(productData)
         .eq('id', product.id)
 
       if (error) {
-        toast.error('Failed to update product')
+        toast({
+          title: 'Error',
+          description: 'Failed to update product: ' + error.message,
+          variant: 'destructive',
+        })
         setIsSubmitting(false)
         return
       }
 
-      toast.success('Product updated successfully')
+      toast({
+        title: 'Success',
+        description: 'Product updated successfully',
+      })
     } else {
       const { error } = await supabase
         .from('products')
         .insert(productData)
 
       if (error) {
-        toast.error('Failed to create product')
+        toast({
+          title: 'Error',
+          description: 'Failed to create product: ' + error.message,
+          variant: 'destructive',
+        })
         setIsSubmitting(false)
         return
       }
 
-      toast.success('Product created successfully')
+      toast({
+        title: 'Success',
+        description: 'Product created successfully',
+      })
     }
 
     router.push('/admin/products')
@@ -115,15 +129,6 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       sizes: prev.sizes.includes(size)
         ? prev.sizes.filter(s => s !== size)
         : [...prev.sizes, size],
-    }))
-  }
-
-  const toggleColor = (color: string) => {
-    setFormData(prev => ({
-      ...prev,
-      colors: prev.colors.includes(color)
-        ? prev.colors.filter(c => c !== color)
-        : [...prev.colors, color],
     }))
   }
 
@@ -168,6 +173,29 @@ export function ProductForm({ product, categories }: ProductFormProps) {
             />
           </div>
 
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="team">Team</Label>
+              <Input
+                id="team"
+                value={formData.team}
+                onChange={(e) => setFormData({ ...formData, team: e.target.value })}
+                placeholder="e.g., Manchester United"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="season">Season</Label>
+              <Input
+                id="season"
+                value={formData.season}
+                onChange={(e) => setFormData({ ...formData, season: e.target.value })}
+                placeholder="e.g., 2025-26"
+                className="mt-1"
+              />
+            </div>
+          </div>
+
           <div>
             <Label htmlFor="category">Category</Label>
             <Select
@@ -203,7 +231,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Pricing & Stock</CardTitle>
+          <CardTitle>Pricing and Stock</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
@@ -239,8 +267,8 @@ export function ProductForm({ product, categories }: ProductFormProps) {
                 id="stock"
                 type="number"
                 min="0"
-                value={formData.stock_quantity}
-                onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
+                value={formData.stock}
+                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                 required
                 className="mt-1"
               />
@@ -251,7 +279,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Variants</CardTitle>
+          <CardTitle>Sizes</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -270,23 +298,6 @@ export function ProductForm({ product, categories }: ProductFormProps) {
               ))}
             </div>
           </div>
-
-          <div>
-            <Label>Available Colors</Label>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {COLORS.map((color) => (
-                <Button
-                  key={color}
-                  type="button"
-                  variant={formData.colors.includes(color) ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => toggleColor(color)}
-                >
-                  {color}
-                </Button>
-              ))}
-            </div>
-          </div>
         </CardContent>
       </Card>
 
@@ -297,24 +308,13 @@ export function ProductForm({ product, categories }: ProductFormProps) {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label htmlFor="is_active">Active</Label>
-              <p className="text-sm text-muted-foreground">Product is visible on the store</p>
-            </div>
-            <Switch
-              id="is_active"
-              checked={formData.is_active}
-              onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="is_featured">Featured</Label>
+              <Label htmlFor="featured">Featured</Label>
               <p className="text-sm text-muted-foreground">Show on homepage featured section</p>
             </div>
             <Switch
-              id="is_featured"
-              checked={formData.is_featured}
-              onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
+              id="featured"
+              checked={formData.featured}
+              onCheckedChange={(checked) => setFormData({ ...formData, featured: checked })}
             />
           </div>
         </CardContent>

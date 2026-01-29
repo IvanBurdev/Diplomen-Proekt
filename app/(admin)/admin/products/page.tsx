@@ -1,25 +1,82 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/server'
+import { createBrowserClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Package, Edit, Eye } from 'lucide-react'
+import { Plus, Package, Edit, Eye, Trash2, Loader2 } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { useToast } from '@/hooks/use-toast'
 import type { Product } from '@/lib/types'
 
-export default async function AdminProductsPage() {
-  const supabase = await createClient()
+export default function AdminProductsPage() {
+  const [products, setProducts] = useState<(Product & { category: { name: string } | null })[]>([])
+  const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const supabase = createBrowserClient()
+  const { toast } = useToast()
 
-  const { data: products } = await supabase
-    .from('products')
-    .select('*, category:categories(name)')
-    .order('created_at', { ascending: false })
+  useEffect(() => {
+    fetchProducts()
+  }, [])
+
+  async function fetchProducts() {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, category:categories(name)')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to load products', variant: 'destructive' })
+    } else {
+      setProducts(data || [])
+    }
+    setLoading(false)
+  }
+
+  async function deleteProduct(productId: string) {
+    setDeletingId(productId)
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', productId)
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to delete product', variant: 'destructive' })
+    } else {
+      toast({ title: 'Success', description: 'Product deleted successfully' })
+      setProducts(products.filter(p => p.id !== productId))
+    }
+    setDeletingId(null)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-heading text-2xl font-bold text-foreground">Products</h2>
+          <h2 className="font-serif text-2xl font-bold text-foreground">Products</h2>
           <p className="text-muted-foreground">Manage your product catalog</p>
         </div>
         <Link href="/admin/products/new">
@@ -31,7 +88,7 @@ export default async function AdminProductsPage() {
       </div>
 
       <div className="grid gap-4">
-        {(products as (Product & { category: { name: string } | null })[])?.map((product) => (
+        {products.map((product) => (
           <Card key={product.id}>
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
@@ -78,13 +135,43 @@ export default async function AdminProductsPage() {
                       <span className="sr-only">Edit</span>
                     </Button>
                   </Link>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete &quot;{product.name}&quot;? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteProduct(product.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          disabled={deletingId === product.id}
+                        >
+                          {deletingId === product.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            'Delete'
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             </CardContent>
           </Card>
         ))}
 
-        {(!products || products.length === 0) && (
+        {products.length === 0 && (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Package className="h-12 w-12 text-muted-foreground mb-4" />
