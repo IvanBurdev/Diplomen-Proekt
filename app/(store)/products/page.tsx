@@ -2,6 +2,15 @@ import { createClient } from '@/lib/supabase/server'
 import { ProductCard } from '@/components/product-card'
 import { ProductFilters } from '@/components/product-filters'
 import type { Product, Category } from '@/lib/types'
+import { getCategoryLabelBg } from '@/lib/localization'
+import { getStockForSize } from '@/lib/size-stock'
+
+const CATEGORY_SLUG_ALIASES: Record<string, string[]> = {
+  'training-gear': ['training-wear'],
+  'retro-kits': ['retro-classics'],
+  'training-wear': ['training-gear'],
+  'retro-classics': ['retro-kits'],
+}
 
 interface ProductsPageProps {
   searchParams: Promise<{
@@ -33,15 +42,30 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     .gt('stock', 0)
 
   // Apply filters
+  let resolvedCategorySlug = params.category
   if (params.category) {
-    const { data: category } = await supabase
+    const categoryCandidates = [params.category, ...(CATEGORY_SLUG_ALIASES[params.category] || [])]
+    let { data: category } = await supabase
       .from('categories')
-      .select('id')
+      .select('id, slug')
       .eq('slug', params.category)
-      .single()
-    
+      .maybeSingle()
+
+    if (!category && categoryCandidates.length > 1) {
+      const { data: aliasCategory } = await supabase
+        .from('categories')
+        .select('id, slug')
+        .in('slug', categoryCandidates)
+        .limit(1)
+        .maybeSingle()
+      category = aliasCategory
+    }
+
     if (category) {
       query = query.eq('category_id', category.id)
+      resolvedCategorySlug = category.slug
+    } else {
+      query = query.eq('category_id', '00000000-0000-0000-0000-000000000000')
     }
   }
 
@@ -66,8 +90,6 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     query = query.overlaps('sizes', sizes)
   }
 
-  // Colors filter removed - not in schema
-
   // Apply sorting
   switch (params.sort) {
     case 'price_asc':
@@ -86,18 +108,43 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   }
 
   const { data: products } = await query
+  let filteredProducts = (products as Product[]) || []
+
+  // Color filtering with case-insensitive matching to handle inconsistent stored values.
+  if (params.colors) {
+    const selectedColors = params.colors
+      .split(',')
+      .map((c) => c.trim().toLowerCase())
+      .filter(Boolean)
+
+    filteredProducts = filteredProducts.filter((product) => {
+      const productColors = (product.colors || []).map((c) => c.toLowerCase())
+      return selectedColors.some((selected) => productColors.includes(selected))
+    })
+  }
+
+  if (params.sizes) {
+    const selectedSizes = params.sizes
+      .split(',')
+      .map((size) => size.trim())
+      .filter(Boolean)
+
+    filteredProducts = filteredProducts.filter((product) =>
+      selectedSizes.some((size) => getStockForSize(product, size) > 0)
+    )
+  }
 
   // Get current category name for title
-  const currentCategory = (categories as Category[])?.find(c => c.slug === params.category)
+  const currentCategory = (categories as Category[])?.find(c => c.slug === resolvedCategorySlug)
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-8">
         <h1 className="font-heading text-3xl font-bold text-foreground">
-          {currentCategory ? currentCategory.name : 'All Products'}
+          {currentCategory ? getCategoryLabelBg(currentCategory) : 'Всички продукти'}
         </h1>
         <p className="mt-2 text-muted-foreground">
-          {products?.length || 0} products found
+          {filteredProducts.length || 0} намерени продукта
         </p>
       </div>
 
@@ -114,9 +161,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             <ProductFilters categories={(categories as Category[]) || []} />
           </div>
 
-          {products && products.length > 0 ? (
+          {filteredProducts.length > 0 ? (
             <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-              {(products as Product[]).map((product) => (
+              {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
@@ -124,10 +171,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="text-6xl mb-4">🔍</div>
               <h2 className="font-heading text-xl font-semibold text-foreground">
-                No products found
+                Няма намерени продукти
               </h2>
               <p className="mt-2 text-muted-foreground max-w-md">
-                Try adjusting your filters or search terms to find what you're looking for.
+                Опитай да промениш филтрите или търсенето.
               </p>
             </div>
           )}

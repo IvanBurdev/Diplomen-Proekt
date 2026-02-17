@@ -55,7 +55,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = useCallback(async (product: Product, quantity: number, size: string) => {
     if (!user) {
-      toast({ title: 'Error', description: 'Please sign in to add items to cart', variant: 'destructive' })
+      toast({ title: 'Грешка', description: 'Влез в профила си, за да добавяш продукти в количката', variant: 'destructive' })
       return
     }
 
@@ -70,7 +70,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         .eq('id', existingItem.id)
 
       if (error) {
-        toast({ title: 'Error', description: 'Failed to update cart', variant: 'destructive' })
+        toast({ title: 'Грешка', description: 'Неуспешно обновяване на количката', variant: 'destructive' })
         return
       }
     } else {
@@ -84,13 +84,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
         })
 
       if (error) {
-        toast({ title: 'Error', description: 'Failed to add to cart', variant: 'destructive' })
+        toast({ title: 'Грешка', description: 'Неуспешно добавяне в количката', variant: 'destructive' })
         return
       }
     }
 
     mutate(`cart-${user.id}`)
-    toast({ title: 'Success', description: 'Added to cart' })
+    toast({ title: 'Успех', description: 'Добавено в количката' })
   }, [user, items, supabase, toast])
 
   const updateQuantity = useCallback(async (itemId: string, quantity: number) => {
@@ -103,12 +103,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         .eq('id', itemId)
 
       if (error) {
-        toast({ title: 'Error', description: 'Failed to remove item', variant: 'destructive' })
+        toast({ title: 'Грешка', description: 'Неуспешно премахване на продукта', variant: 'destructive' })
         return
       }
 
       mutate(`cart-${user.id}`)
-      toast({ title: 'Success', description: 'Item removed from cart' })
+      toast({ title: 'Успех', description: 'Продуктът е премахнат от количката' })
       return
     }
 
@@ -118,7 +118,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       .eq('id', itemId)
 
     if (error) {
-      toast({ title: 'Error', description: 'Failed to update quantity', variant: 'destructive' })
+      toast({ title: 'Грешка', description: 'Неуспешно обновяване на количеството', variant: 'destructive' })
       return
     }
 
@@ -134,12 +134,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       .eq('id', itemId)
 
     if (error) {
-      toast({ title: 'Error', description: 'Failed to remove item', variant: 'destructive' })
+      toast({ title: 'Грешка', description: 'Неуспешно премахване на продукта', variant: 'destructive' })
       return
     }
 
     mutate(`cart-${user.id}`)
-    toast({ title: 'Success', description: 'Item removed from cart' })
+    toast({ title: 'Успех', description: 'Продуктът е премахнат от количката' })
   }, [user, supabase, toast])
 
   const clearCart = useCallback(async () => {
@@ -151,7 +151,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       .eq('user_id', user.id)
 
     if (error) {
-      toast({ title: 'Error', description: 'Failed to clear cart', variant: 'destructive' })
+      toast({ title: 'Грешка', description: 'Неуспешно изчистване на количката', variant: 'destructive' })
       return
     }
 

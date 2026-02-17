@@ -10,6 +10,7 @@ import { useWishlist } from '@/lib/wishlist-context'
 import { useAuth } from '@/lib/auth-context'
 import type { Product } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { getCategoryLabelBg } from '@/lib/localization'
 
 interface ProductCardProps {
   product: Product
@@ -48,7 +49,7 @@ export function ProductCard({ product }: ProductCardProps) {
         
         {product.featured && (
           <Badge className="absolute right-2 top-2 bg-primary text-primary-foreground">
-            Featured
+            Избрано
           </Badge>
         )}
         
@@ -67,7 +68,7 @@ export function ProductCard({ product }: ProductCardProps) {
           >
             <Heart className={cn("h-4 w-4", inWishlist && "fill-current")} />
             <span className="sr-only">
-              {inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+              {inWishlist ? 'Премахни от любими' : 'Добави в любими'}
             </span>
           </Button>
         )}
@@ -81,28 +82,29 @@ export function ProductCard({ product }: ProductCardProps) {
         </Link>
         
         {product.category && (
-          <p className="mt-1 text-xs text-muted-foreground">{product.category.name}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{getCategoryLabelBg(product.category)}</p>
         )}
         
         <div className="mt-2 flex items-center gap-2">
           <span className="font-heading text-lg font-bold text-foreground">
-            ${product.price.toFixed(2)}
+            €{product.price.toFixed(2)}
           </span>
           {product.original_price && (
             <span className="text-sm text-muted-foreground line-through">
-              ${product.original_price.toFixed(2)}
+              €{product.original_price.toFixed(2)}
             </span>
           )}
         </div>
         
         {product.stock <= 5 && product.stock > 0 && (
-          <p className="mt-2 text-xs text-accent">Only {product.stock} left!</p>
+          <p className="mt-2 text-xs text-accent">Остават само {product.stock} бр.!</p>
         )}
         
         {product.stock === 0 && (
-          <p className="mt-2 text-xs text-destructive">Out of stock</p>
+          <p className="mt-2 text-xs text-destructive">Изчерпан</p>
         )}
       </CardContent>
     </Card>
   )
 }
+

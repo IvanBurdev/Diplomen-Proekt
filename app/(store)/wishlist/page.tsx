@@ -17,16 +17,16 @@ export default function WishlistPage() {
       <div className="mx-auto max-w-7xl px-4 py-16">
         <div className="text-center">
           <Heart className="mx-auto h-16 w-16 text-muted-foreground" />
-          <h1 className="mt-4 font-heading text-2xl font-bold text-foreground">Your Wishlist</h1>
+          <h1 className="mt-4 font-heading text-2xl font-bold text-foreground">Любими продукти</h1>
           <p className="mt-2 text-muted-foreground">
-            Please sign in to view your wishlist
+            Влез в профила си, за да видиш любимите
           </p>
           <div className="mt-6 flex justify-center gap-4">
             <Link href="/auth/login">
-              <Button>Sign In</Button>
+              <Button>Вход</Button>
             </Link>
             <Link href="/products">
-              <Button variant="outline">Browse Products</Button>
+              <Button variant="outline">Разгледай продукти</Button>
             </Link>
           </div>
         </div>
@@ -39,7 +39,7 @@ export default function WishlistPage() {
       <div className="mx-auto max-w-7xl px-4 py-16">
         <div className="text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading wishlist...</p>
+          <p className="mt-4 text-muted-foreground">Зареждане на любими...</p>
         </div>
       </div>
     )
@@ -50,13 +50,13 @@ export default function WishlistPage() {
       <div className="mx-auto max-w-7xl px-4 py-16">
         <div className="text-center">
           <Heart className="mx-auto h-16 w-16 text-muted-foreground" />
-          <h1 className="mt-4 font-heading text-2xl font-bold text-foreground">Your Wishlist is Empty</h1>
+          <h1 className="mt-4 font-heading text-2xl font-bold text-foreground">Нямаш запазени любими</h1>
           <p className="mt-2 text-muted-foreground">
-            Save items you love for later
+            Запазвай продукти, за да ги намериш по-късно
           </p>
           <Link href="/products" className="mt-6 inline-block">
             <Button className="gap-2">
-              Discover Products
+              Разгледай продукти
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
@@ -68,8 +68,8 @@ export default function WishlistPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-8">
-        <h1 className="font-heading text-3xl font-bold text-foreground">My Wishlist</h1>
-        <p className="mt-2 text-muted-foreground">{items.length} items saved</p>
+        <h1 className="font-heading text-3xl font-bold text-foreground">Моите любими</h1>
+        <p className="mt-2 text-muted-foreground">Запазени продукти: {items.length}</p>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

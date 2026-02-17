@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Heart, Minus, Plus, ShoppingCart, ChevronLeft, Truck, Shield, RefreshCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +13,8 @@ import { useWishlist } from '@/lib/wishlist-context'
 import { ProductCard } from '@/components/product-card'
 import type { Product } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { getCategoryLabelBg, getColorLabelBg } from '@/lib/localization'
+import { getStockForSize, getTotalStock } from '@/lib/size-stock'
 
 interface ProductDetailsProps {
   product: Product
@@ -25,9 +27,28 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
   const { isInWishlist, toggleWishlist } = useWishlist()
   
   const sizes = product.sizes || []
-  const [selectedSize, setSelectedSize] = useState(sizes[0] || '')
+  const colors = product.colors || []
+  const availableSizes = useMemo(
+    () => sizes.filter((size) => getStockForSize(product, size) > 0),
+    [product, sizes]
+  )
+  const [selectedSize, setSelectedSize] = useState(availableSizes[0] || sizes[0] || '')
+  const [selectedColor, setSelectedColor] = useState(colors[0] || '')
   const [quantity, setQuantity] = useState(1)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
+  const selectedSizeStock = selectedSize ? getStockForSize(product, selectedSize) : 0
+  const availableStock = sizes.length > 0 ? selectedSizeStock : getTotalStock(product)
+
+  useEffect(() => {
+    if (sizes.length === 0) return
+    if (!selectedSize || getStockForSize(product, selectedSize) <= 0) {
+      setSelectedSize(availableSizes[0] || '')
+    }
+  }, [availableSizes, product, selectedSize, sizes.length])
+
+  useEffect(() => {
+    setQuantity((current) => Math.max(1, Math.min(current, Math.max(availableStock, 1))))
+  }, [availableStock])
 
   const inWishlist = isInWishlist(product.id)
   const discount = product.original_price
@@ -35,7 +56,7 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
     : 0
 
   const handleAddToCart = async () => {
-    if (!selectedSize) return
+    if ((sizes.length > 0 && !selectedSize) || availableStock <= 0) return
     
     setIsAddingToCart(true)
     await addToCart(product, quantity, selectedSize)
@@ -51,7 +72,7 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="mr-1 h-4 w-4" />
-          Back to Products
+          Назад към продуктите
         </Link>
       </div>
 
@@ -86,7 +107,7 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
               href={`/products?category=${product.category.slug}`}
               className="text-sm text-primary hover:underline"
             >
-              {product.category.name}
+              {getCategoryLabelBg(product.category)}
             </Link>
           )}
           
@@ -96,11 +117,11 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
 
           <div className="mt-4 flex items-center gap-4">
             <span className="font-heading text-3xl font-bold text-foreground">
-              ${product.price.toFixed(2)}
+              €{product.price.toFixed(2)}
             </span>
             {product.original_price && (
               <span className="text-xl text-muted-foreground line-through">
-                ${product.original_price.toFixed(2)}
+                €{product.original_price.toFixed(2)}
               </span>
             )}
           </div>
@@ -111,12 +132,31 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
             </p>
           )}
 
+          {/* Color Selection */}
+          {colors.length > 0 && (
+            <div className="mt-8">
+              <span className="text-sm font-medium text-foreground">Цвят: {getColorLabelBg(selectedColor)}</span>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {colors.map((color) => (
+                  <Button
+                    key={color}
+                    variant={selectedColor === color ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedColor(color)}
+                  >
+                    {getColorLabelBg(color)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Size Selection */}
-          <div className="mt-8">
+          <div className={colors.length > 0 ? "mt-6" : "mt-8"}>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-foreground">Size</span>
+              <span className="text-sm font-medium text-foreground">Размер</span>
               <Link href="/size-guide" className="text-sm text-primary hover:underline">
-                Size Guide
+                Таблица с размери
               </Link>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -126,19 +166,23 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
                   variant={selectedSize === size ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setSelectedSize(size)}
-                  className="min-w-12"
+                  className={cn(
+                    'min-w-12',
+                    getStockForSize(product, size) <= 0 && 'opacity-50'
+                  )}
+                  disabled={getStockForSize(product, size) <= 0}
                 >
                   {size}
                 </Button>
               )) : (
-                <span className="text-sm text-muted-foreground">One size fits all</span>
+                <span className="text-sm text-muted-foreground">Универсален размер</span>
               )}
             </div>
           </div>
 
-{/* Quantity */}
+          {/* Quantity */}
           <div className="mt-6">
-            <span className="text-sm font-medium text-foreground">Quantity</span>
+            <span className="text-sm font-medium text-foreground">Количество</span>
             <div className="mt-3 flex items-center gap-3">
               <Button
                 variant="outline"
@@ -152,8 +196,8 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setQuantity(Math.min(product.stock || 10, quantity + 1))}
-                disabled={quantity >= (product.stock || 10)}
+                onClick={() => setQuantity(Math.min(availableStock || 1, quantity + 1))}
+                disabled={quantity >= (availableStock || 1) || availableStock <= 0}
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -161,13 +205,13 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
           </div>
 
           {/* Stock Status */}
-          {product.stock <= 5 && product.stock > 0 && (
+          {availableStock <= 5 && availableStock > 0 && (
             <p className="mt-4 text-sm text-accent">
-              Only {product.stock} left in stock!
+              Остават само {availableStock} бр. в наличност!
             </p>
           )}
-          {product.stock === 0 && (
-            <p className="mt-4 text-sm text-destructive font-medium">Out of stock</p>
+          {availableStock === 0 && (
+            <p className="mt-4 text-sm text-destructive font-medium">Изчерпан</p>
           )}
 
           {/* Actions */}
@@ -176,10 +220,10 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
               size="lg"
               className="flex-1 gap-2"
               onClick={handleAddToCart}
-              disabled={(sizes.length > 0 && !selectedSize) || product.stock === 0 || isAddingToCart}
+              disabled={(sizes.length > 0 && !selectedSize) || availableStock === 0 || isAddingToCart}
             >
               <ShoppingCart className="h-5 w-5" />
-              {isAddingToCart ? 'Adding...' : 'Add to Cart'}
+              {isAddingToCart ? 'Добавяне...' : 'Добави в количката'}
             </Button>
             
             {user && (
@@ -191,7 +235,7 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
               >
                 <Heart className={cn("h-5 w-5", inWishlist && "fill-current")} />
                 <span className="sr-only">
-                  {inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+                  {inWishlist ? 'Премахни от любими' : 'Добави в любими'}
                 </span>
               </Button>
             )}
@@ -200,9 +244,9 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
           {/* Features */}
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
             {[
-              { icon: Truck, title: 'Free Shipping', desc: 'On orders $100+' },
-              { icon: Shield, title: 'Authentic', desc: '100% genuine' },
-              { icon: RefreshCcw, title: 'Easy Returns', desc: '30 days' },
+              { icon: Truck, title: 'Безплатна доставка', desc: 'За поръчки над €100' },
+              { icon: Shield, title: 'Автентичност', desc: '100% оригинални' },
+              { icon: RefreshCcw, title: 'Лесно връщане', desc: 'До 30 дни' },
             ].map((feature) => (
               <Card key={feature.title} className="border-border">
                 <CardContent className="flex items-center gap-3 p-4">
@@ -222,7 +266,7 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
       {relatedProducts.length > 0 && (
         <div className="mt-16">
           <h2 className="font-heading text-2xl font-bold text-foreground mb-6">
-            You Might Also Like
+            Може да ти хареса и
           </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {relatedProducts.map((product) => (

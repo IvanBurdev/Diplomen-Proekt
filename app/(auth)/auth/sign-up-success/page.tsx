@@ -10,20 +10,20 @@ export default function SignUpSuccessPage() {
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
           <Mail className="h-8 w-8 text-primary" />
         </div>
-        <CardTitle className="font-heading text-2xl">Check Your Email</CardTitle>
+        <CardTitle className="font-heading text-2xl">Провери имейла си</CardTitle>
         <CardDescription>
-          We've sent you a confirmation link to verify your email address.
+          Изпратихме ти потвърдителен линк за верификация на имейла.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground">
-          Click the link in the email to complete your registration and start shopping.
-          If you don't see the email, check your spam folder.
+          Натисни линка в имейла, за да завършиш регистрацията и да започнеш да пазаруваш.
+          Ако не го виждаш, провери папка Спам.
         </p>
       </CardContent>
       <CardFooter className="justify-center">
         <Link href="/auth/login">
-          <Button variant="outline">Back to Sign In</Button>
+          <Button variant="outline">Назад към вход</Button>
         </Link>
       </CardFooter>
     </Card>

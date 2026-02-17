@@ -30,10 +30,10 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
         >
           <ChevronLeft className="mr-1 h-4 w-4" />
-          Back to Products
+          Назад към продуктите
         </Link>
-        <h2 className="font-heading text-2xl font-bold text-foreground">Edit Product</h2>
-        <p className="text-muted-foreground">Update product information</p>
+        <h2 className="font-heading text-2xl font-bold text-foreground">Редакция на продукт</h2>
+        <p className="text-muted-foreground">Обнови информацията за продукта</p>
       </div>
 
       <ProductForm 

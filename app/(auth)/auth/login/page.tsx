@@ -36,7 +36,7 @@ export default function LoginPage() {
     setIsLoading(false)
 
     if (error) {
-      setError(error.message)
+      setError('Невалиден имейл или парола')
       return
     }
 
@@ -47,8 +47,8 @@ export default function LoginPage() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="font-heading text-2xl">Welcome Back</CardTitle>
-        <CardDescription>Sign in to your KitZone account</CardDescription>
+        <CardTitle className="font-heading text-2xl">Добре дошъл отново</CardTitle>
+        <CardDescription>Влез в своя KitZone профил</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -59,7 +59,7 @@ export default function LoginPage() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Имейл</Label>
             <Input
               id="email"
               type="email"
@@ -73,19 +73,19 @@ export default function LoginPage() {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Парола</Label>
               <Link 
                 href="/auth/forgot-password" 
                 className="text-sm text-primary hover:underline"
               >
-                Forgot password?
+                Забравена парола?
               </Link>
             </div>
             <div className="relative">
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
+                placeholder="Въведи паролата"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -104,7 +104,7 @@ export default function LoginPage() {
                   <Eye className="h-4 w-4 text-muted-foreground" />
                 )}
                 <span className="sr-only">
-                  {showPassword ? 'Hide password' : 'Show password'}
+                  {showPassword ? 'Скрий паролата' : 'Покажи паролата'}
                 </span>
               </Button>
             </div>
@@ -114,19 +114,19 @@ export default function LoginPage() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
+                Влизане...
               </>
             ) : (
-              'Sign In'
+              'Вход'
             )}
           </Button>
         </form>
       </CardContent>
       <CardFooter className="justify-center">
         <p className="text-sm text-muted-foreground">
-          Don't have an account?{' '}
+          Нямаш профил?{' '}
           <Link href="/auth/sign-up" className="text-primary hover:underline">
-            Sign up
+            Регистрация
           </Link>
         </p>
       </CardFooter>

@@ -25,13 +25,26 @@ import {
 } from '@/components/ui/sheet'
 import { Slider } from '@/components/ui/slider'
 import type { Category } from '@/lib/types'
+import { getCategoryLabelBg } from '@/lib/localization'
 
 interface ProductFiltersProps {
   categories: Category[]
 }
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
-const COLORS = ['White', 'Black', 'Red', 'Blue', 'Green', 'Yellow', 'Navy', 'Orange']
+const COLORS = [
+  { value: 'White', label: 'Бял' },
+  { value: 'Black', label: 'Черен' },
+  { value: 'Red', label: 'Червен' },
+  { value: 'Blue', label: 'Син' },
+  { value: 'Green', label: 'Зелен' },
+  { value: 'Yellow', label: 'Жълт' },
+  { value: 'Navy', label: 'Тъмносин' },
+  { value: 'Orange', label: 'Оранжев' },
+  { value: 'Purple', label: 'Лилав' },
+  { value: 'Pink', label: 'Розов' },
+  { value: 'Gray', label: 'Сив' },
+]
 
 export function ProductFilters({ categories }: ProductFiltersProps) {
   const router = useRouter()
@@ -66,8 +79,7 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
     })
   }, [router, searchParams])
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
+  const applySearch = () => {
     updateFilters({ search: searchValue || null })
   }
 
@@ -78,10 +90,10 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
     updateFilters({ sizes: newSizes.length > 0 ? newSizes.join(',') : null })
   }
 
-  const toggleColor = (color: string) => {
-    const newColors = currentColors.includes(color)
-      ? currentColors.filter(c => c !== color)
-      : [...currentColors, color]
+  const toggleColor = (colorValue: string) => {
+    const newColors = currentColors.includes(colorValue)
+      ? currentColors.filter(c => c !== colorValue)
+      : [...currentColors, colorValue]
     updateFilters({ colors: newColors.length > 0 ? newColors.join(',') : null })
   }
 
@@ -101,39 +113,45 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
   const hasActiveFilters = currentCategory || currentSearch || currentSizes.length > 0 || 
     currentColors.length > 0 || currentMinPrice > 0 || currentMaxPrice < 500
 
-  const FilterContent = () => (
+  const renderFilterContent = () => (
     <div className="space-y-6">
       {/* Search */}
       <div>
-        <Label className="text-sm font-medium text-foreground">Search</Label>
-        <form onSubmit={handleSearch} className="mt-2 flex gap-2">
+        <Label className="text-sm font-medium text-foreground">Търсене</Label>
+        <div className="mt-2 flex gap-2">
           <Input
-            placeholder="Search products..."
+            placeholder="Търси продукти..."
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                applySearch()
+              }
+            }}
             className="flex-1"
           />
-          <Button type="submit" size="icon" variant="secondary">
+          <Button type="button" size="icon" variant="secondary" onClick={applySearch}>
             <Search className="h-4 w-4" />
           </Button>
-        </form>
+        </div>
       </div>
 
       {/* Category */}
       <div>
-        <Label className="text-sm font-medium text-foreground">Category</Label>
+        <Label className="text-sm font-medium text-foreground">Категория</Label>
         <Select
           value={currentCategory || 'all'}
           onValueChange={(value) => updateFilters({ category: value === 'all' ? null : value })}
         >
           <SelectTrigger className="mt-2">
-            <SelectValue placeholder="All Categories" />
+            <SelectValue placeholder="Всички категории" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">Всички категории</SelectItem>
             {categories.map((cat) => (
               <SelectItem key={cat.id} value={cat.slug}>
-                {cat.name}
+                {getCategoryLabelBg(cat)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -142,7 +160,7 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
 
       {/* Price Range */}
       <div>
-        <Label className="text-sm font-medium text-foreground">Price Range</Label>
+        <Label className="text-sm font-medium text-foreground">Ценови диапазон</Label>
         <div className="mt-4 px-2">
           <Slider
             value={priceRange}
@@ -153,8 +171,8 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
             className="w-full"
           />
           <div className="mt-2 flex items-center justify-between text-sm text-muted-foreground">
-            <span>${priceRange[0]}</span>
-            <span>${priceRange[1]}</span>
+            <span>€{priceRange[0]}</span>
+            <span>€{priceRange[1]}</span>
           </div>
           <Button 
             variant="outline" 
@@ -162,14 +180,14 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
             className="mt-2 w-full bg-transparent"
             onClick={applyPriceRange}
           >
-            Apply Price
+            Приложи цена
           </Button>
         </div>
       </div>
 
       {/* Sizes */}
       <div>
-        <Label className="text-sm font-medium text-foreground">Size</Label>
+        <Label className="text-sm font-medium text-foreground">Размер</Label>
         <div className="mt-2 flex flex-wrap gap-2">
           {SIZES.map((size) => (
             <Button
@@ -186,20 +204,20 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
 
       {/* Colors */}
       <div>
-        <Label className="text-sm font-medium text-foreground">Color</Label>
+        <Label className="text-sm font-medium text-foreground">Цвят</Label>
         <div className="mt-2 space-y-2">
           {COLORS.map((color) => (
-            <div key={color} className="flex items-center gap-2">
+            <div key={color.value} className="flex items-center gap-2">
               <Checkbox
-                id={`color-${color}`}
-                checked={currentColors.includes(color)}
-                onCheckedChange={() => toggleColor(color)}
+                id={`color-${color.value}`}
+                checked={currentColors.includes(color.value)}
+                onCheckedChange={() => toggleColor(color.value)}
               />
               <label
-                htmlFor={`color-${color}`}
+                htmlFor={`color-${color.value}`}
                 className="text-sm text-foreground cursor-pointer"
               >
-                {color}
+                {color.label}
               </label>
             </div>
           ))}
@@ -210,7 +228,7 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
       {hasActiveFilters && (
         <Button variant="outline" className="w-full bg-transparent" onClick={clearFilters}>
           <X className="mr-2 h-4 w-4" />
-          Clear Filters
+          Изчисти филтрите
         </Button>
       )}
     </div>
@@ -221,35 +239,41 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
       {/* Desktop Filters */}
       <div className="hidden lg:block">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="font-medium text-foreground">Filters</h2>
+          <h2 className="font-medium text-foreground">Филтри</h2>
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
-              Clear all
+              Изчисти всичко
             </Button>
           )}
         </div>
-        <FilterContent />
+        {renderFilterContent()}
       </div>
 
       {/* Mobile Filters */}
       <div className="lg:hidden flex items-center justify-between gap-4 mb-6">
-        <form onSubmit={handleSearch} className="flex-1 flex gap-2">
+        <div className="flex-1 flex gap-2">
           <Input
-            placeholder="Search products..."
+            placeholder="Търси продукти..."
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                applySearch()
+              }
+            }}
             className="flex-1"
           />
-          <Button type="submit" size="icon" variant="secondary">
+          <Button type="button" size="icon" variant="secondary" onClick={applySearch}>
             <Search className="h-4 w-4" />
           </Button>
-        </form>
+        </div>
 
         <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
           <SheetTrigger asChild>
             <Button variant="outline" className="gap-2 bg-transparent">
               <SlidersHorizontal className="h-4 w-4" />
-              Filters
+              Филтри
               {hasActiveFilters && (
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
                   !
@@ -259,10 +283,10 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
           </SheetTrigger>
           <SheetContent side="right" className="w-80 overflow-y-auto">
             <SheetHeader>
-              <SheetTitle>Filters</SheetTitle>
+              <SheetTitle>Филтри</SheetTitle>
             </SheetHeader>
             <div className="mt-6">
-              <FilterContent />
+              {renderFilterContent()}
             </div>
           </SheetContent>
         </Sheet>
@@ -272,13 +296,13 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
           onValueChange={(value) => updateFilters({ sort: value })}
         >
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Sort by" />
+            <SelectValue placeholder="Сортирай по" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="newest">Newest</SelectItem>
-            <SelectItem value="price_asc">Price: Low to High</SelectItem>
-            <SelectItem value="price_desc">Price: High to Low</SelectItem>
-            <SelectItem value="name">Name</SelectItem>
+            <SelectItem value="newest">Най-нови</SelectItem>
+            <SelectItem value="price_asc">Цена: ниска към висока</SelectItem>
+            <SelectItem value="price_desc">Цена: висока към ниска</SelectItem>
+            <SelectItem value="name">Име</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -290,13 +314,13 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
           onValueChange={(value) => updateFilters({ sort: value })}
         >
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Sort by" />
+            <SelectValue placeholder="Сортирай по" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="newest">Newest</SelectItem>
-            <SelectItem value="price_asc">Price: Low to High</SelectItem>
-            <SelectItem value="price_desc">Price: High to Low</SelectItem>
-            <SelectItem value="name">Name</SelectItem>
+            <SelectItem value="newest">Най-нови</SelectItem>
+            <SelectItem value="price_asc">Цена: ниска към висока</SelectItem>
+            <SelectItem value="price_desc">Цена: висока към ниска</SelectItem>
+            <SelectItem value="name">Име</SelectItem>
           </SelectContent>
         </Select>
       </div>

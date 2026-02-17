@@ -46,8 +46,8 @@ export default function AdminReviewsPage() {
 
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load reviews",
+        title: "Грешка",
+        description: "Неуспешно зареждане на отзивите",
         variant: "destructive",
       });
     } else {
@@ -61,14 +61,14 @@ export default function AdminReviewsPage() {
 
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to delete review",
+        title: "Грешка",
+        description: "Неуспешно изтриване на отзива",
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Success",
-        description: "Review deleted",
+        title: "Успех",
+        description: "Отзивът е изтрит",
       });
       fetchReviews();
     }
@@ -78,22 +78,22 @@ export default function AdminReviewsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Reviews</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Отзиви</h1>
           <p className="text-muted-foreground">
-            Manage customer reviews
+            Управлявай клиентските отзиви
           </p>
         </div>
         <Select value={ratingFilter} onValueChange={setRatingFilter}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Filter by rating" />
+            <SelectValue placeholder="Филтър по оценка" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Ratings</SelectItem>
-            <SelectItem value="5">5 Stars</SelectItem>
-            <SelectItem value="4">4 Stars</SelectItem>
-            <SelectItem value="3">3 Stars</SelectItem>
-            <SelectItem value="2">2 Stars</SelectItem>
-            <SelectItem value="1">1 Star</SelectItem>
+            <SelectItem value="all">Всички оценки</SelectItem>
+            <SelectItem value="5">5 звезди</SelectItem>
+            <SelectItem value="4">4 звезди</SelectItem>
+            <SelectItem value="3">3 звезди</SelectItem>
+            <SelectItem value="2">2 звезди</SelectItem>
+            <SelectItem value="1">1 звезда</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -102,7 +102,7 @@ export default function AdminReviewsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
-            Customer Reviews ({reviews.length})
+            Клиентски отзиви ({reviews.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -112,7 +112,7 @@ export default function AdminReviewsPage() {
             </div>
           ) : reviews.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No reviews found
+              Няма намерени отзиви
             </div>
           ) : (
             <div className="space-y-4">
@@ -126,7 +126,7 @@ export default function AdminReviewsPage() {
                       <div className="relative h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
                         <Image
                           src={review.products?.image_url || "/placeholder.svg"}
-                          alt={review.products?.name || "Product"}
+                          alt={review.products?.name || "Продукт"}
                           fill
                           className="object-cover"
                         />
@@ -171,7 +171,7 @@ export default function AdminReviewsPage() {
                       onClick={() => deleteReview(review.id)}
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
-                      Delete
+                      Изтрий
                     </Button>
                   </div>
                 </div>

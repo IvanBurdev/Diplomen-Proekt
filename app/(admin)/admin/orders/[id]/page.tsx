@@ -25,6 +25,18 @@ const statusColors: Record<string, string> = {
   shipped: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
   delivered: 'bg-green-500/10 text-green-600 border-green-500/20',
   cancelled: 'bg-red-500/10 text-red-600 border-red-500/20',
+  return_requested: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  returned: 'bg-slate-500/10 text-slate-600 border-slate-500/20',
+}
+
+const statusLabels: Record<string, string> = {
+  pending: 'Чакаща',
+  processing: 'Обработва се',
+  shipped: 'Изпратена',
+  delivered: 'Доставена',
+  cancelled: 'Отказана',
+  return_requested: 'Заявено връщане',
+  returned: 'Върната',
 }
 
 type OrderWithDetails = Order & {
@@ -58,7 +70,7 @@ export default function AdminOrderDetailPage({
       .single()
 
     if (orderError) {
-      toast({ title: 'Error', description: 'Failed to load order', variant: 'destructive' })
+      toast({ title: 'Грешка', description: 'Неуспешно зареждане на поръчката', variant: 'destructive' })
       console.error('[v0] Order fetch error:', orderError)
       setLoading(false)
       return
@@ -73,21 +85,31 @@ export default function AdminOrderDetailPage({
 
     setOrder({
       ...orderData,
-      customer: profile || { full_name: null, email: 'Unknown' },
+      customer: profile || { full_name: null, email: 'Неизвестен' },
     })
     setLoading(false)
   }
 
   async function updateOrderStatus(newStatus: string) {
+    if (order?.status === 'delivered' || order?.status === 'returned') {
+      toast({ title: 'Инфо', description: 'Този статус не може да се променя повече.' })
+      return
+    }
+
+    if (order?.status === 'return_requested' && !['return_requested', 'returned'].includes(newStatus)) {
+      toast({ title: 'Инфо', description: 'При заявено връщане можеш само да одобриш като „Върната“.' })
+      return
+    }
+
     const { error } = await supabase
       .from('orders')
       .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq('id', id)
 
     if (error) {
-      toast({ title: 'Error', description: 'Failed to update order status', variant: 'destructive' })
+      toast({ title: 'Грешка', description: 'Неуспешна промяна на статуса', variant: 'destructive' })
     } else {
-      toast({ title: 'Success', description: 'Order status updated' })
+      toast({ title: 'Успех', description: 'Статусът е обновен' })
       if (order) {
         setOrder({ ...order, status: newStatus as Order['status'] })
       }
@@ -106,9 +128,9 @@ export default function AdminOrderDetailPage({
     return (
       <div className="text-center py-16">
         <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">Order not found</p>
+        <p className="text-muted-foreground">Поръчката не е намерена</p>
         <Button asChild className="mt-4">
-          <Link href="/admin/orders">Back to Orders</Link>
+          <Link href="/admin/orders">Назад към поръчките</Link>
         </Button>
       </div>
     )
@@ -131,26 +153,41 @@ export default function AdminOrderDetailPage({
         </Button>
         <div className="flex-1">
           <h1 className="font-serif text-2xl font-bold text-foreground">
-            Order #{order.id.slice(0, 8)}
+            Поръчка #{order.id.slice(0, 8)}
           </h1>
           <p className="text-muted-foreground">
-            Placed on {new Date(order.created_at).toLocaleDateString()}
+            Създадена на {new Date(order.created_at).toLocaleDateString('bg-BG')}
           </p>
         </div>
-        <Select value={order.status} onValueChange={updateOrderStatus}>
-          <SelectTrigger className="w-40">
-            <Badge variant="outline" className={statusColors[order.status]}>
-              {order.status}
-            </Badge>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="processing">Processing</SelectItem>
-            <SelectItem value="shipped">Shipped</SelectItem>
-            <SelectItem value="delivered">Delivered</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+        {order.status === 'delivered' || order.status === 'returned' ? (
+          <Badge variant="outline" className={statusColors[order.status]}>
+            {statusLabels[order.status]}
+          </Badge>
+        ) : (
+          <Select value={order.status} onValueChange={updateOrderStatus}>
+            <SelectTrigger className="w-40">
+              <Badge variant="outline" className={statusColors[order.status]}>
+                {statusLabels[order.status] || order.status}
+              </Badge>
+            </SelectTrigger>
+            <SelectContent>
+              {order.status === 'return_requested' ? (
+                <>
+                  <SelectItem value="return_requested">Заявено връщане</SelectItem>
+                  <SelectItem value="returned">Върната</SelectItem>
+                </>
+              ) : (
+                <>
+                  <SelectItem value="pending">Чакаща</SelectItem>
+                  <SelectItem value="processing">Обработва се</SelectItem>
+                  <SelectItem value="shipped">Изпратена</SelectItem>
+                  <SelectItem value="delivered">Доставена</SelectItem>
+                  <SelectItem value="cancelled">Отказана</SelectItem>
+                </>
+              )}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -159,7 +196,7 @@ export default function AdminOrderDetailPage({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                Order Items ({order.order_items.length})
+                Продукти в поръчката ({order.order_items.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -172,30 +209,30 @@ export default function AdminOrderDetailPage({
                     <div className="relative h-20 w-20 rounded-md overflow-hidden bg-muted flex-shrink-0">
                       <Image
                         src={item.products?.image_url || '/placeholder.svg'}
-                        alt={item.products?.name || 'Product'}
+                        alt={item.products?.name || 'Продукт'}
                         fill
                         className="object-cover"
                       />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold truncate">
-                        {item.products?.name || 'Unknown Product'}
+                        {item.products?.name || 'Неизвестен продукт'}
                       </h4>
                       {item.size && (
                         <p className="text-sm text-muted-foreground">
-                          Size: {item.size}
+                          Размер: {item.size}
                         </p>
                       )}
                       <p className="text-sm text-muted-foreground">
-                        Qty: {item.quantity}
+                        Количество: {item.quantity}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">
-                        ${(item.price * item.quantity).toFixed(2)}
+                        €{(item.price * item.quantity).toFixed(2)}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        ${item.price.toFixed(2)} each
+                        €{item.price.toFixed(2)} за брой
                       </p>
                     </div>
                   </div>
@@ -210,15 +247,15 @@ export default function AdminOrderDetailPage({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
-                Customer
+                Клиент
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <p className="font-medium">
-                {order.customer?.full_name || 'Guest'}
+                {order.customer?.full_name || 'Гост'}
               </p>
               <p className="text-sm text-muted-foreground">
-                {order.customer?.email || 'N/A'}
+                {order.customer?.email || 'Няма данни'}
               </p>
             </CardContent>
           </Card>
@@ -227,7 +264,7 @@ export default function AdminOrderDetailPage({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
-                Shipping Address
+                Адрес за доставка
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -243,7 +280,7 @@ export default function AdminOrderDetailPage({
                   {shippingAddress.country && <p>{shippingAddress.country}</p>}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No address provided</p>
+                <p className="text-sm text-muted-foreground">Няма въведен адрес</p>
               )}
             </CardContent>
           </Card>
@@ -252,30 +289,30 @@ export default function AdminOrderDetailPage({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
-                Payment Summary
+                Обобщение на плащането
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span className="text-muted-foreground">Междинна сума</span>
+                <span>€{subtotal.toFixed(2)}</span>
               </div>
               {order.discount_amount > 0 && (
                 <>
                   <div className="flex justify-between text-sm text-primary">
-                    <span>Discount {order.discount_code && `(${order.discount_code})`}</span>
-                    <span>-${order.discount_amount.toFixed(2)}</span>
+                    <span>Отстъпка {order.discount_code && `(${order.discount_code})`}</span>
+                    <span>-€{order.discount_amount.toFixed(2)}</span>
                   </div>
                 </>
               )}
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Shipping</span>
-                <span>{subtotal >= 100 ? 'Free' : '$9.99'}</span>
+                <span className="text-muted-foreground">Доставка</span>
+                <span>{subtotal >= 100 ? 'Безплатна' : '€9.99'}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-semibold">
-                <span>Total</span>
-                <span>${order.total.toFixed(2)}</span>
+                <span>Общо</span>
+                <span>€{order.total.toFixed(2)}</span>
               </div>
             </CardContent>
           </Card>

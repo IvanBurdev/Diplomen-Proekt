@@ -21,6 +21,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { Product, Category } from '@/lib/types'
+import { getCategoryLabelBg, getColorLabelBg } from '@/lib/localization'
+import { normalizeSizeStock } from '@/lib/size-stock'
 
 interface ProductFormProps {
   product?: Product
@@ -28,6 +30,7 @@ interface ProductFormProps {
 }
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+const COLORS = ['Red', 'Blue', 'White', 'Black', 'Green', 'Yellow', 'Navy', 'Orange', 'Purple', 'Pink', 'Gray']
 
 export function ProductForm({ product, categories }: ProductFormProps) {
   const router = useRouter()
@@ -35,6 +38,22 @@ export function ProductForm({ product, categories }: ProductFormProps) {
   const { toast } = useToast()
   const isEditing = !!product
 
+  const initialSizeStock = (() => {
+    const parsed = normalizeSizeStock(product?.size_stock)
+    if (Object.keys(parsed).length > 0) {
+      return parsed
+    }
+
+    if (product?.sizes?.length) {
+      const fallbackPerSize = Math.max(0, Math.floor((product.stock || 0) / product.sizes.length))
+      return product.sizes.reduce<Record<string, number>>((acc, size) => {
+        acc[size] = fallbackPerSize
+        return acc
+      }, {})
+    }
+
+    return {}
+  })()
   const [formData, setFormData] = useState({
     name: product?.name || '',
     slug: product?.slug || '',
@@ -48,6 +67,8 @@ export function ProductForm({ product, categories }: ProductFormProps) {
     stock: product?.stock?.toString() || '0',
     featured: product?.featured || false,
     sizes: product?.sizes || [],
+    size_stock: initialSizeStock,
+    colors: product?.colors || [],
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -59,9 +80,17 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       .replace(/(^-|-$)/g, '')
   }
 
+  const hasSizedInventory = formData.sizes.length > 0
+  const totalSizeStock = formData.sizes.reduce((sum, size) => sum + (formData.size_stock[size] ?? 0), 0)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+
+    const normalizedSizeStock = formData.sizes.reduce<Record<string, number>>((acc, size) => {
+      acc[size] = Math.max(0, Math.floor(Number(formData.size_stock[size] ?? 0)))
+      return acc
+    }, {})
 
     const productData = {
       name: formData.name,
@@ -73,9 +102,11 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       image_url: formData.image_url || null,
       team: formData.team || null,
       season: formData.season || null,
-      stock: parseInt(formData.stock),
+      stock: hasSizedInventory ? totalSizeStock : parseInt(formData.stock),
       featured: formData.featured,
       sizes: formData.sizes,
+      size_stock: normalizedSizeStock,
+      colors: formData.colors,
     }
 
     if (isEditing && product) {
@@ -86,8 +117,8 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 
       if (error) {
         toast({
-          title: 'Error',
-          description: 'Failed to update product: ' + error.message,
+          title: 'Грешка',
+          description: 'Неуспешно обновяване на продукта: ' + error.message,
           variant: 'destructive',
         })
         setIsSubmitting(false)
@@ -95,8 +126,8 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       }
 
       toast({
-        title: 'Success',
-        description: 'Product updated successfully',
+        title: 'Успех',
+        description: 'Продуктът е обновен успешно',
       })
     } else {
       const { error } = await supabase
@@ -105,8 +136,8 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 
       if (error) {
         toast({
-          title: 'Error',
-          description: 'Failed to create product: ' + error.message,
+          title: 'Грешка',
+          description: 'Неуспешно създаване на продукта: ' + error.message,
           variant: 'destructive',
         })
         setIsSubmitting(false)
@@ -114,8 +145,8 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       }
 
       toast({
-        title: 'Success',
-        description: 'Product created successfully',
+        title: 'Успех',
+        description: 'Продуктът е създаден успешно',
       })
     }
 
@@ -124,11 +155,44 @@ export function ProductForm({ product, categories }: ProductFormProps) {
   }
 
   const toggleSize = (size: string) => {
+    setFormData((prev) => {
+      const isSelected = prev.sizes.includes(size)
+      const nextSizes = isSelected
+        ? prev.sizes.filter(s => s !== size)
+        : [...prev.sizes, size]
+      const nextSizeStock = { ...prev.size_stock }
+
+      if (isSelected) {
+        delete nextSizeStock[size]
+      } else if (nextSizeStock[size] === undefined) {
+        nextSizeStock[size] = 0
+      }
+
+      return {
+        ...prev,
+        sizes: nextSizes,
+        size_stock: nextSizeStock,
+      }
+    })
+  }
+
+  const updateSizeStock = (size: string, rawValue: string) => {
+    const safeValue = rawValue === '' ? 0 : Math.max(0, Math.floor(Number(rawValue)))
+    setFormData((prev) => ({
+      ...prev,
+      size_stock: {
+        ...prev.size_stock,
+        [size]: Number.isFinite(safeValue) ? safeValue : 0,
+      },
+    }))
+  }
+
+  const toggleColor = (color: string) => {
     setFormData(prev => ({
       ...prev,
-      sizes: prev.sizes.includes(size)
-        ? prev.sizes.filter(s => s !== size)
-        : [...prev.sizes, size],
+      colors: prev.colors.includes(color)
+        ? prev.colors.filter(c => c !== color)
+        : [...prev.colors, color],
     }))
   }
 
@@ -136,12 +200,12 @@ export function ProductForm({ product, categories }: ProductFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Basic Information</CardTitle>
+          <CardTitle>Основна информация</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <Label htmlFor="name">Product Name</Label>
+              <Label htmlFor="name">Име на продукт</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -151,19 +215,19 @@ export function ProductForm({ product, categories }: ProductFormProps) {
               />
             </div>
             <div>
-              <Label htmlFor="slug">Slug (URL)</Label>
+              <Label htmlFor="slug">Слъг (URL)</Label>
               <Input
                 id="slug"
                 value={formData.slug}
                 onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                placeholder={generateSlug(formData.name) || 'auto-generated'}
+                placeholder={generateSlug(formData.name) || 'автоматично'}
                 className="mt-1"
               />
             </div>
           </div>
 
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Описание</Label>
             <Textarea
               id="description"
               value={formData.description}
@@ -175,40 +239,40 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <Label htmlFor="team">Team</Label>
+              <Label htmlFor="team">Отбор</Label>
               <Input
                 id="team"
                 value={formData.team}
                 onChange={(e) => setFormData({ ...formData, team: e.target.value })}
-                placeholder="e.g., Manchester United"
+                placeholder="напр. Manchester United"
                 className="mt-1"
               />
             </div>
             <div>
-              <Label htmlFor="season">Season</Label>
+              <Label htmlFor="season">Сезон</Label>
               <Input
                 id="season"
                 value={formData.season}
                 onChange={(e) => setFormData({ ...formData, season: e.target.value })}
-                placeholder="e.g., 2025-26"
+                placeholder="напр. 2025-26"
                 className="mt-1"
               />
             </div>
           </div>
 
           <div>
-            <Label htmlFor="category">Category</Label>
+            <Label htmlFor="category">Категория</Label>
             <Select
               value={formData.category_id}
               onValueChange={(value) => setFormData({ ...formData, category_id: value })}
             >
               <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Select a category" />
+                <SelectValue placeholder="Избери категория" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
-                    {category.name}
+                    {getCategoryLabelBg(category)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -216,7 +280,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
           </div>
 
           <div>
-            <Label htmlFor="image_url">Image URL</Label>
+            <Label htmlFor="image_url">URL на снимка</Label>
             <Input
               id="image_url"
               type="url"
@@ -231,12 +295,12 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Pricing and Stock</CardTitle>
+          <CardTitle>Цена и наличност</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <Label htmlFor="price">Price ($)</Label>
+              <Label htmlFor="price">Цена (€)</Label>
               <Input
                 id="price"
                 type="number"
@@ -249,7 +313,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
               />
             </div>
             <div>
-              <Label htmlFor="original_price">Original Price ($)</Label>
+              <Label htmlFor="original_price">Стара цена (€)</Label>
               <Input
                 id="original_price"
                 type="number"
@@ -257,21 +321,27 @@ export function ProductForm({ product, categories }: ProductFormProps) {
                 min="0"
                 value={formData.original_price}
                 onChange={(e) => setFormData({ ...formData, original_price: e.target.value })}
-                placeholder="Leave empty if no discount"
+                placeholder="Остави празно, ако няма намаление"
                 className="mt-1"
               />
             </div>
             <div>
-              <Label htmlFor="stock">Stock Quantity</Label>
+              <Label htmlFor="stock">Наличност</Label>
               <Input
                 id="stock"
                 type="number"
                 min="0"
-                value={formData.stock}
+                value={hasSizedInventory ? totalSizeStock.toString() : formData.stock}
                 onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                 required
                 className="mt-1"
+                readOnly={hasSizedInventory}
               />
+              {hasSizedInventory && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Автоматично се смята от наличността по размери.
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -279,11 +349,11 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Sizes</CardTitle>
+          <CardTitle>Размери</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label>Available Sizes</Label>
+            <Label>Налични размери</Label>
             <div className="mt-2 flex flex-wrap gap-2">
               {SIZES.map((size) => (
                 <Button
@@ -298,18 +368,63 @@ export function ProductForm({ product, categories }: ProductFormProps) {
               ))}
             </div>
           </div>
+
+          {formData.sizes.length > 0 && (
+            <div>
+              <Label>Наличност по размер</Label>
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                {formData.sizes.map((size) => (
+                  <div key={size}>
+                    <Label htmlFor={`size-stock-${size}`}>{size}</Label>
+                    <Input
+                      id={`size-stock-${size}`}
+                      type="number"
+                      min="0"
+                      value={(formData.size_stock[size] ?? 0).toString()}
+                      onChange={(e) => updateSizeStock(size, e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Settings</CardTitle>
+          <CardTitle>Цветове</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Налични цветове</Label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {COLORS.map((color) => (
+                <Button
+                  key={color}
+                  type="button"
+                  variant={formData.colors.includes(color) ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => toggleColor(color)}
+                >
+                  {getColorLabelBg(color)}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Настройки</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label htmlFor="featured">Featured</Label>
-              <p className="text-sm text-muted-foreground">Show on homepage featured section</p>
+              <Label htmlFor="featured">Избрано</Label>
+              <p className="text-sm text-muted-foreground">Показвай в секция „Избрани“ на началната страница</p>
             </div>
             <Switch
               id="featured"
@@ -325,14 +440,14 @@ export function ProductForm({ product, categories }: ProductFormProps) {
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {isEditing ? 'Updating...' : 'Creating...'}
+              {isEditing ? 'Обновяване...' : 'Създаване...'}
             </>
           ) : (
-            isEditing ? 'Update Product' : 'Create Product'
+            isEditing ? 'Обнови продукт' : 'Създай продукт'
           )}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>
-          Cancel
+          Отказ
         </Button>
       </div>
     </form>

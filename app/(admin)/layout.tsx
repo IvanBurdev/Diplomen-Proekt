@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { AdminSidebar } from '@/components/admin-sidebar'
-import { Providers } from '@/components/providers'
 
 export default async function AdminLayout({
   children,
@@ -29,26 +28,25 @@ export default async function AdminLayout({
   }
 
   return (
-    <Providers>
-      <div className="flex min-h-screen">
-        <AdminSidebar />
-        <main className="flex-1 bg-background">
-          <div className="border-b border-border bg-background px-6 py-4">
-            <div className="flex items-center justify-between">
-              <h1 className="font-heading text-lg font-semibold text-foreground">Admin Dashboard</h1>
-              <Link 
-                href="/" 
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Back to Store
-              </Link>
-            </div>
+    <div className="flex min-h-screen">
+      <AdminSidebar />
+      <main className="flex-1 bg-background">
+        <div className="border-b border-border bg-background px-6 py-4">
+          <div className="flex items-center justify-between">
+            <h1 className="font-heading text-lg font-semibold text-foreground">Админ панел</h1>
+            <Link
+              href="/"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Назад към магазина
+            </Link>
           </div>
-          <div className="p-6">
-            {children}
-          </div>
-        </main>
-      </div>
-    </Providers>
+        </div>
+        <div className="p-6">
+          {children}
+        </div>
+      </main>
+    </div>
   )
 }
+

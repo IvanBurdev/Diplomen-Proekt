@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS products (
   team TEXT,
   season TEXT,
   sizes TEXT[] DEFAULT '{}',
+  size_stock JSONB DEFAULT '{}'::jsonb,
   stock INTEGER NOT NULL DEFAULT 0,
   featured BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -74,7 +75,7 @@ CREATE POLICY "products_admin_delete" ON products FOR DELETE USING (
 CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'return_requested', 'returned')),
   total DECIMAL(10, 2) NOT NULL,
   shipping_address JSONB,
   discount_code TEXT,

@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronLeft, CreditCard, Loader2, ShoppingCart, Tag } from 'lucide-react'
+import { Banknote, ChevronLeft, CreditCard, Loader2, ShoppingCart, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -27,6 +27,8 @@ export default function CheckoutPage() {
   const { toast } = useToast()
 
   const [isProcessing, setIsProcessing] = useState(false)
+  const [orderPlaced, setOrderPlaced] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('card')
   const [discountCode, setDiscountCode] = useState('')
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percent: number; id: string } | null>(null)
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false)
@@ -50,14 +52,28 @@ export default function CheckoutPage() {
     return null
   }
 
+  if (orderPlaced) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-16 text-center">
+        <h1 className="font-serif text-3xl font-bold text-foreground">Поръчката е приета</h1>
+        <p className="mt-3 text-muted-foreground">
+          Благодарим ти! Поръчката е записана успешно.
+        </p>
+        <Link href="/" className="mt-8 inline-block">
+          <Button size="lg">Върни се в сайта</Button>
+        </Link>
+      </div>
+    )
+  }
+
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-16 text-center">
         <ShoppingCart className="mx-auto h-16 w-16 text-muted-foreground" />
-        <h1 className="mt-4 font-serif text-2xl font-bold text-foreground">Your Cart is Empty</h1>
-        <p className="mt-2 text-muted-foreground">Add some items before checking out</p>
+        <h1 className="mt-4 font-serif text-2xl font-bold text-foreground">Количката е празна</h1>
+        <p className="mt-2 text-muted-foreground">Добави продукти преди завършване на поръчката</p>
         <Link href="/products" className="mt-6 inline-block">
-          <Button>Browse Products</Button>
+          <Button>Разгледай продукти</Button>
         </Link>
       </div>
     )
@@ -79,7 +95,7 @@ export default function CheckoutPage() {
     setIsApplyingDiscount(false)
 
     if (error || !data) {
-      setDiscountError('Invalid discount code')
+      setDiscountError('Невалиден код за отстъпка')
       return
     }
 
@@ -87,13 +103,13 @@ export default function CheckoutPage() {
       const now = new Date()
       const validUntil = new Date(data.valid_until)
       if (now > validUntil) {
-        setDiscountError('This discount code has expired')
+        setDiscountError('Този код за отстъпка е изтекъл')
         return
       }
     }
 
     if (data.max_uses && data.current_uses >= data.max_uses) {
-      setDiscountError('This discount code has reached its usage limit')
+      setDiscountError('Този код за отстъпка е достигнал лимита си')
       return
     }
 
@@ -102,7 +118,7 @@ export default function CheckoutPage() {
       percent: data.discount_percent,
       id: data.id,
     })
-    toast({ title: 'Success', description: `Discount applied: ${data.discount_percent}% off!` })
+    toast({ title: 'Успех', description: `Кодът е приложен: -${data.discount_percent}%` })
   }
 
   const handleRemoveDiscount = () => {
@@ -114,7 +130,7 @@ export default function CheckoutPage() {
     e.preventDefault()
 
     if (!shippingAddress.address || !shippingAddress.city || !shippingAddress.zipCode) {
-      toast({ title: 'Error', description: 'Please fill in all shipping details', variant: 'destructive' })
+      toast({ title: 'Грешка', description: 'Моля, попълни всички данни за доставка', variant: 'destructive' })
       return
     }
 
@@ -176,10 +192,27 @@ export default function CheckoutPage() {
 
       await clearCart()
 
-      toast({ title: 'Success', description: 'Order placed successfully!' })
-      router.push(`/account/orders/${order.id}`)
+      // Fire-and-forget confirmation email; checkout remains successful even if email fails.
+      if (user.email) {
+        await fetch('/api/orders/confirmation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: user.email,
+            orderId: order.id,
+            total: finalTotal,
+            paymentMethod,
+            fullName: shippingAddress.fullName,
+          }),
+        }).catch(() => undefined)
+      }
+
+      toast({ title: 'Успех', description: 'Поръчката е приета успешно!' })
+      setOrderPlaced(true)
     } catch {
-      toast({ title: 'Error', description: 'Failed to place order. Please try again.', variant: 'destructive' })
+      toast({ title: 'Грешка', description: 'Неуспешна поръчка. Опитай отново.', variant: 'destructive' })
     } finally {
       setIsProcessing(false)
     }
@@ -192,21 +225,21 @@ export default function CheckoutPage() {
         className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
       >
         <ChevronLeft className="mr-1 h-4 w-4" />
-        Back to Cart
+        Назад към количката
       </Link>
 
-      <h1 className="font-serif text-3xl font-bold text-foreground mb-8">Checkout</h1>
+      <h1 className="font-serif text-3xl font-bold text-foreground mb-8">Завършване на поръчка</h1>
 
       <form onSubmit={handleSubmit}>
         <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Shipping Address</CardTitle>
+                <CardTitle>Адрес за доставка</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="fullName">Full Name</Label>
+                  <Label htmlFor="fullName">Име и фамилия</Label>
                   <Input
                     id="fullName"
                     value={shippingAddress.fullName}
@@ -216,7 +249,7 @@ export default function CheckoutPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address">Адрес</Label>
                   <Textarea
                     id="address"
                     value={shippingAddress.address}
@@ -228,7 +261,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <Label htmlFor="city">City</Label>
+                    <Label htmlFor="city">Град</Label>
                     <Input
                       id="city"
                       value={shippingAddress.city}
@@ -238,7 +271,7 @@ export default function CheckoutPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="state">State/Province</Label>
+                    <Label htmlFor="state">Област</Label>
                     <Input
                       id="state"
                       value={shippingAddress.state}
@@ -249,7 +282,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <Label htmlFor="zipCode">ZIP/Postal Code</Label>
+                    <Label htmlFor="zipCode">Пощенски код</Label>
                     <Input
                       id="zipCode"
                       value={shippingAddress.zipCode}
@@ -259,7 +292,7 @@ export default function CheckoutPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="country">Country</Label>
+                    <Label htmlFor="country">Държава</Label>
                     <Input
                       id="country"
                       value={shippingAddress.country}
@@ -276,14 +309,34 @@ export default function CheckoutPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />
-                  Payment
+                  Плащане
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button
+                    type="button"
+                    variant={paymentMethod === 'card' ? 'default' : 'outline'}
+                    className="justify-start gap-2"
+                    onClick={() => setPaymentMethod('card')}
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    Плащане с карта
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={paymentMethod === 'cash' ? 'default' : 'outline'}
+                    className="justify-start gap-2"
+                    onClick={() => setPaymentMethod('cash')}
+                  >
+                    <Banknote className="h-4 w-4" />
+                    Плащане в брой
+                  </Button>
+                </div>
                 <Alert>
                   <AlertDescription>
-                    This is a demo store. No actual payment will be processed.
-                    Click &quot;Place Order&quot; to simulate a purchase.
+                    Това е демо магазин. Реално плащане няма да бъде обработено.
+                    Натисни &quot;Потвърди поръчката&quot;, за да симулираш покупка.
                   </AlertDescription>
                 </Alert>
               </CardContent>
@@ -293,7 +346,7 @@ export default function CheckoutPage() {
           <div className="lg:sticky lg:top-24 lg:self-start">
             <Card>
               <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
+                <CardTitle>Обобщение на поръчката</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="max-h-64 overflow-y-auto space-y-3">
@@ -322,7 +375,7 @@ export default function CheckoutPage() {
                         </p>
                       </div>
                       <p className="text-sm font-medium text-foreground">
-                        ${((item.product?.price || 0) * item.quantity).toFixed(2)}
+                        €{((item.product?.price || 0) * item.quantity).toFixed(2)}
                       </p>
                     </div>
                   ))}
@@ -331,18 +384,18 @@ export default function CheckoutPage() {
                 <Separator />
 
                 <div>
-                  <Label htmlFor="discount">Discount Code</Label>
+                  <Label htmlFor="discount">Код за отстъпка</Label>
                   <div className="mt-1 flex gap-2">
                     <Input
                       id="discount"
                       value={discountCode}
                       onChange={(e) => setDiscountCode(e.target.value)}
-                      placeholder="Enter code"
+                      placeholder="Въведи код"
                       disabled={!!appliedDiscount}
                     />
                     {appliedDiscount ? (
                       <Button type="button" variant="outline" onClick={handleRemoveDiscount}>
-                        Remove
+                        Премахни
                       </Button>
                     ) : (
                       <Button
@@ -354,7 +407,7 @@ export default function CheckoutPage() {
                         {isApplyingDiscount ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          'Apply'
+                          'Приложи'
                         )}
                       </Button>
                     )}
@@ -365,7 +418,7 @@ export default function CheckoutPage() {
                   {appliedDiscount && (
                     <p className="mt-1 text-xs text-primary flex items-center gap-1">
                       <Tag className="h-3 w-3" />
-                      {appliedDiscount.code}: {appliedDiscount.percent}% off
+                      {appliedDiscount.code}: -{appliedDiscount.percent}%
                     </p>
                   )}
                 </div>
@@ -374,19 +427,19 @@ export default function CheckoutPage() {
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium text-foreground">${totalPrice.toFixed(2)}</span>
+                    <span className="text-muted-foreground">Междинна сума</span>
+                    <span className="font-medium text-foreground">€{totalPrice.toFixed(2)}</span>
                   </div>
                   {appliedDiscount && (
                     <div className="flex justify-between text-sm text-primary">
-                      <span>Discount ({appliedDiscount.percent}%)</span>
-                      <span>-${discountAmount.toFixed(2)}</span>
+                      <span>Отстъпка ({appliedDiscount.percent}%)</span>
+                      <span>-€{discountAmount.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Shipping</span>
+                    <span className="text-muted-foreground">Доставка</span>
                     <span className="font-medium text-foreground">
-                      {shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`}
+                      {shipping === 0 ? 'Безплатна' : `€${shipping.toFixed(2)}`}
                     </span>
                   </div>
                 </div>
@@ -394,9 +447,9 @@ export default function CheckoutPage() {
                 <Separator />
 
                 <div className="flex justify-between">
-                  <span className="font-medium text-foreground">Total</span>
+                  <span className="font-medium text-foreground">Общо</span>
                   <span className="font-serif text-xl font-bold text-foreground">
-                    ${finalTotal.toFixed(2)}
+                    €{finalTotal.toFixed(2)}
                   </span>
                 </div>
 
@@ -409,10 +462,10 @@ export default function CheckoutPage() {
                   {isProcessing ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
+                      Обработване...
                     </>
                   ) : (
-                    'Place Order'
+                    'Потвърди поръчката'
                   )}
                 </Button>
               </CardContent>

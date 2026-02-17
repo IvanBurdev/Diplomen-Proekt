@@ -6,11 +6,11 @@ import { LayoutDashboard, Package, ShoppingCart, Users, Star, Tag, Settings } fr
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { href: '/admin', icon: LayoutDashboard, label: 'Overview' },
-  { href: '/admin/products', icon: Package, label: 'Products' },
-  { href: '/admin/orders', icon: ShoppingCart, label: 'Orders' },
-  { href: '/admin/reviews', icon: Star, label: 'Reviews' },
-  { href: '/admin/discounts', icon: Tag, label: 'Discounts' },
+  { href: '/admin', icon: LayoutDashboard, label: 'Табло' },
+  { href: '/admin/products', icon: Package, label: 'Продукти' },
+  { href: '/admin/orders', icon: ShoppingCart, label: 'Поръчки' },
+  { href: '/admin/reviews', icon: Star, label: 'Отзиви' },
+  { href: '/admin/discounts', icon: Tag, label: 'Намаления' },
 ]
 
 export function AdminSidebar() {
@@ -52,3 +52,4 @@ export function AdminSidebar() {
     </aside>
   )
 }
+

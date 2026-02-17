@@ -30,12 +30,12 @@ export default function SignUpPage() {
     setError(null)
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match')
+      setError('Паролите не съвпадат')
       return
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters')
+      setError('Паролата трябва да е поне 6 символа')
       return
     }
 
@@ -55,7 +55,7 @@ export default function SignUpPage() {
     setIsLoading(false)
 
     if (error) {
-      setError(error.message)
+      setError('Неуспешна регистрация. Провери данните и опитай отново.')
       return
     }
 
@@ -70,8 +70,8 @@ export default function SignUpPage() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="font-heading text-2xl">Create Account</CardTitle>
-        <CardDescription>Join KitZone and get 10% off your first order</CardDescription>
+        <CardTitle className="font-heading text-2xl">Създай профил</CardTitle>
+        <CardDescription>Регистрирай се в KitZone и вземи 10% отстъпка за първа поръчка</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -82,11 +82,11 @@ export default function SignUpPage() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
+            <Label htmlFor="fullName">Име и фамилия</Label>
             <Input
               id="fullName"
               type="text"
-              placeholder="John Doe"
+              placeholder="Иван Иванов"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
@@ -95,7 +95,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Имейл</Label>
             <Input
               id="email"
               type="email"
@@ -108,12 +108,12 @@ export default function SignUpPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Парола</Label>
             <div className="relative">
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Create a password"
+                placeholder="Създай парола"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -136,11 +136,11 @@ export default function SignUpPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Label htmlFor="confirmPassword">Потвърди паролата</Label>
             <Input
               id="confirmPassword"
               type="password"
-              placeholder="Confirm your password"
+              placeholder="Потвърди паролата"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
@@ -149,13 +149,13 @@ export default function SignUpPage() {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            By creating an account, you agree to our{' '}
+            Със създаването на профил приемаш нашите{' '}
             <Link href="/terms" className="text-primary hover:underline">
-              Terms of Service
+              Общи условия
             </Link>{' '}
-            and{' '}
+            и{' '}
             <Link href="/privacy" className="text-primary hover:underline">
-              Privacy Policy
+              Политика за поверителност
             </Link>
           </p>
 
@@ -163,19 +163,19 @@ export default function SignUpPage() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating account...
+                Създаване на профил...
               </>
             ) : (
-              'Create Account'
+              'Създай профил'
             )}
           </Button>
         </form>
       </CardContent>
       <CardFooter className="justify-center">
         <p className="text-sm text-muted-foreground">
-          Already have an account?{' '}
+          Вече имаш профил?{' '}
           <Link href="/auth/login" className="text-primary hover:underline">
-            Sign in
+            Вход
           </Link>
         </p>
       </CardFooter>

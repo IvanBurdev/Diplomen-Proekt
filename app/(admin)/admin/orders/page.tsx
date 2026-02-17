@@ -22,8 +22,19 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { Eye, Search, Package, Loader2 } from 'lucide-react'
+import { Eye, Search, Package, Loader2, Trash2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 interface OrderWithProfile {
   id: string
@@ -45,11 +56,24 @@ const statusColors: Record<string, string> = {
   shipped: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
   delivered: 'bg-green-500/10 text-green-600 border-green-500/20',
   cancelled: 'bg-red-500/10 text-red-600 border-red-500/20',
+  return_requested: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  returned: 'bg-slate-500/10 text-slate-600 border-slate-500/20',
+}
+
+const statusLabels: Record<string, string> = {
+  pending: 'Чакаща',
+  processing: 'Обработва се',
+  shipped: 'Изпратена',
+  delivered: 'Доставена',
+  cancelled: 'Отказана',
+  return_requested: 'Заявено връщане',
+  returned: 'Върната',
 }
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<OrderWithProfile[]>([])
   const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const supabase = createBrowserClient()
@@ -74,7 +98,7 @@ export default function AdminOrdersPage() {
     const { data: ordersData, error } = await query
 
     if (error) {
-      toast({ title: 'Error', description: 'Failed to load orders', variant: 'destructive' })
+      toast({ title: 'Грешка', description: 'Неуспешно зареждане на поръчките', variant: 'destructive' })
       console.error('[v0] Orders fetch error:', error)
       setLoading(false)
       return
@@ -92,8 +116,8 @@ export default function AdminOrdersPage() {
 
     const ordersWithProfiles = (ordersData || []).map(order => ({
       ...order,
-      user_email: profileMap.get(order.user_id)?.email || 'Unknown',
-      user_name: profileMap.get(order.user_id)?.full_name || 'Guest',
+      user_email: profileMap.get(order.user_id)?.email || 'Неизвестен',
+      user_name: profileMap.get(order.user_id)?.full_name || 'Гост',
     }))
 
     setOrders(ordersWithProfiles)
@@ -101,17 +125,58 @@ export default function AdminOrdersPage() {
   }
 
   async function updateOrderStatus(orderId: string, newStatus: string) {
+    const currentOrder = orders.find((o) => o.id === orderId)
+    if (currentOrder?.status === 'delivered' || currentOrder?.status === 'returned') {
+      toast({ title: 'Инфо', description: 'Този статус не може да се променя повече.' })
+      return
+    }
+
+    if (currentOrder?.status === 'return_requested' && !['return_requested', 'returned'].includes(newStatus)) {
+      toast({ title: 'Инфо', description: 'При заявено връщане можеш само да одобриш като „Върната“.' })
+      return
+    }
+
     const { error } = await supabase
       .from('orders')
       .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq('id', orderId)
 
     if (error) {
-      toast({ title: 'Error', description: 'Failed to update order status', variant: 'destructive' })
+      toast({ title: 'Грешка', description: 'Неуспешна промяна на статуса', variant: 'destructive' })
     } else {
-      toast({ title: 'Success', description: 'Order status updated' })
+      toast({ title: 'Успех', description: 'Статусът е обновен' })
       setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o))
     }
+  }
+
+  async function deleteOrder(orderId: string) {
+    setDeletingId(orderId)
+
+    const { error: itemsError } = await supabase
+      .from('order_items')
+      .delete()
+      .eq('order_id', orderId)
+
+    if (itemsError) {
+      toast({ title: 'Грешка', description: 'Неуспешно изтриване на продуктите от поръчката', variant: 'destructive' })
+      setDeletingId(null)
+      return
+    }
+
+    const { error: orderError } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', orderId)
+
+    if (orderError) {
+      toast({ title: 'Грешка', description: 'Неуспешно изтриване на поръчката', variant: 'destructive' })
+      setDeletingId(null)
+      return
+    }
+
+    setOrders((prev) => prev.filter((o) => o.id !== orderId))
+    toast({ title: 'Успех', description: 'Поръчката е изтрита' })
+    setDeletingId(null)
   }
 
   const filteredOrders = orders.filter(
@@ -125,8 +190,8 @@ export default function AdminOrdersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-2xl font-bold text-foreground">Orders</h1>
-          <p className="text-muted-foreground">Manage and track customer orders</p>
+          <h1 className="font-serif text-2xl font-bold text-foreground">Поръчки</h1>
+          <p className="text-muted-foreground">Управлявай и проследявай клиентските поръчки</p>
         </div>
       </div>
 
@@ -135,13 +200,13 @@ export default function AdminOrdersPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
-              All Orders ({filteredOrders.length})
+              Всички поръчки ({filteredOrders.length})
             </CardTitle>
             <div className="flex flex-col gap-2 sm:flex-row">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search orders..."
+                  placeholder="Търси поръчки..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 w-full sm:w-64"
@@ -149,15 +214,17 @@ export default function AdminOrdersPage() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder="Филтър по статус" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="shipped">Shipped</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="all">Всички статуси</SelectItem>
+                  <SelectItem value="pending">Чакаща</SelectItem>
+                  <SelectItem value="processing">Обработва се</SelectItem>
+                  <SelectItem value="shipped">Изпратена</SelectItem>
+                  <SelectItem value="delivered">Доставена</SelectItem>
+                  <SelectItem value="cancelled">Отказана</SelectItem>
+                  <SelectItem value="return_requested">Заявено връщане</SelectItem>
+                  <SelectItem value="returned">Върната</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -171,9 +238,9 @@ export default function AdminOrdersPage() {
           ) : filteredOrders.length === 0 ? (
             <div className="text-center py-12">
               <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="font-medium text-foreground">No orders found</h3>
+              <h3 className="font-medium text-foreground">Няма намерени поръчки</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Orders will appear here when customers make purchases
+                Поръчките ще се появят тук, когато клиентите пазаруват
               </p>
             </div>
           ) : (
@@ -181,12 +248,12 @@ export default function AdminOrdersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Order ID</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Total</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>ID поръчка</TableHead>
+                    <TableHead>Клиент</TableHead>
+                    <TableHead>Общо</TableHead>
+                    <TableHead>Статус</TableHead>
+                    <TableHead>Дата</TableHead>
+                    <TableHead className="text-right">Действия</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -202,37 +269,87 @@ export default function AdminOrdersPage() {
                         </div>
                       </TableCell>
                       <TableCell className="font-semibold">
-                        ${order.total.toFixed(2)}
+                        €{order.total.toFixed(2)}
                       </TableCell>
                       <TableCell>
-                        <Select
-                          value={order.status}
-                          onValueChange={(value) => updateOrderStatus(order.id, value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <Badge variant="outline" className={statusColors[order.status]}>
-                              {order.status}
-                            </Badge>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="processing">Processing</SelectItem>
-                            <SelectItem value="shipped">Shipped</SelectItem>
-                            <SelectItem value="delivered">Delivered</SelectItem>
-                            <SelectItem value="cancelled">Cancelled</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        {order.status === 'delivered' || order.status === 'returned' ? (
+                          <Badge variant="outline" className={statusColors[order.status]}>
+                            {statusLabels[order.status]}
+                          </Badge>
+                        ) : (
+                          <Select
+                            value={order.status}
+                            onValueChange={(value) => updateOrderStatus(order.id, value)}
+                          >
+                            <SelectTrigger className="w-32">
+                              <Badge variant="outline" className={statusColors[order.status]}>
+                                {statusLabels[order.status] || order.status}
+                              </Badge>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {order.status === 'return_requested' ? (
+                                <>
+                                  <SelectItem value="return_requested">Заявено връщане</SelectItem>
+                                  <SelectItem value="returned">Върната</SelectItem>
+                                </>
+                              ) : (
+                                <>
+                                  <SelectItem value="pending">Чакаща</SelectItem>
+                                  <SelectItem value="processing">Обработва се</SelectItem>
+                                  <SelectItem value="shipped">Изпратена</SelectItem>
+                                  <SelectItem value="delivered">Доставена</SelectItem>
+                                  <SelectItem value="cancelled">Отказана</SelectItem>
+                                </>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        )}
                       </TableCell>
                       <TableCell>
                         {new Date(order.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/admin/orders/${order.id}`}>
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Link>
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/admin/orders/${order.id}`}>
+                              <Eye className="h-4 w-4 mr-1" />
+                              Преглед
+                            </Link>
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive"
+                                disabled={deletingId === order.id}
+                              >
+                                {deletingId === order.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Изтриване на поръчка</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Сигурен ли си, че искаш да изтриеш поръчка #{order.id.slice(0, 8).toUpperCase()}?
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Отказ</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteOrder(order.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Изтрий
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

@@ -1,7 +1,6 @@
 import React from "react"
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
-import { Providers } from '@/components/providers'
 
 export default function StoreLayout({
   children,
@@ -9,12 +8,10 @@ export default function StoreLayout({
   children: React.ReactNode
 }) {
   return (
-    <Providers>
-      <div className="flex min-h-screen flex-col">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
-      </div>
-    </Providers>
+    <div className="flex min-h-screen flex-col">
+      <Header />
+      <main className="flex-1">{children}</main>
+      <Footer />
+    </div>
   )
 }

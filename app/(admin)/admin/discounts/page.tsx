@@ -55,7 +55,7 @@ export default function AdminDiscountsPage() {
       .order("created_at", { ascending: false })
 
     if (error) {
-      toast({ title: "Error", description: "Failed to load discounts", variant: "destructive" })
+      toast({ title: "Грешка", description: "Неуспешно зареждане на кодовете", variant: "destructive" })
     } else {
       setDiscounts(data || [])
     }
@@ -75,9 +75,9 @@ export default function AdminDiscountsPage() {
     })
 
     if (error) {
-      toast({ title: "Error", description: "Failed to create discount code", variant: "destructive" })
+      toast({ title: "Грешка", description: "Неуспешно създаване на код за отстъпка", variant: "destructive" })
     } else {
-      toast({ title: "Success", description: "Discount code created" })
+      toast({ title: "Успех", description: "Кодът за отстъпка е създаден" })
       setDialogOpen(false)
       setFormData({
         code: "",
@@ -96,9 +96,9 @@ export default function AdminDiscountsPage() {
       .eq("id", id)
 
     if (error) {
-      toast({ title: "Error", description: "Failed to update discount", variant: "destructive" })
+      toast({ title: "Грешка", description: "Неуспешно обновяване на отстъпката", variant: "destructive" })
     } else {
-      toast({ title: "Success", description: `Discount ${!currentState ? "activated" : "deactivated"}` })
+      toast({ title: "Успех", description: `Отстъпката е ${!currentState ? "активирана" : "деактивирана"}` })
       fetchDiscounts()
     }
   }
@@ -110,9 +110,9 @@ export default function AdminDiscountsPage() {
       .eq("id", id)
 
     if (error) {
-      toast({ title: "Error", description: "Failed to delete discount", variant: "destructive" })
+      toast({ title: "Грешка", description: "Неуспешно изтриване на отстъпката", variant: "destructive" })
     } else {
-      toast({ title: "Success", description: "Discount deleted" })
+      toast({ title: "Успех", description: "Отстъпката е изтрита" })
       fetchDiscounts()
     }
   }
@@ -121,28 +121,28 @@ export default function AdminDiscountsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Discount Codes</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Кодове за отстъпка</h1>
           <p className="text-muted-foreground">
-            Manage promotional codes and discounts
+            Управлявай промо кодове и отстъпки
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Add Discount
+              Добави отстъпка
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create Discount Code</DialogTitle>
+              <DialogTitle>Създай код за отстъпка</DialogTitle>
               <DialogDescription>
-                Add a new promotional discount code for customers
+                Добави нов промо код за клиентите
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="code">Code</Label>
+                <Label htmlFor="code">Код</Label>
                 <Input
                   id="code"
                   value={formData.code}
@@ -155,7 +155,7 @@ export default function AdminDiscountsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="percent">Discount Percent</Label>
+                  <Label htmlFor="percent">Процент отстъпка</Label>
                   <Input
                     id="percent"
                     type="number"
@@ -170,7 +170,7 @@ export default function AdminDiscountsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="max_uses">Max Uses</Label>
+                  <Label htmlFor="max_uses">Макс. използвания</Label>
                   <Input
                     id="max_uses"
                     type="number"
@@ -183,7 +183,7 @@ export default function AdminDiscountsPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="expires">Valid Until</Label>
+                <Label htmlFor="expires">Валиден до</Label>
                 <Input
                   id="expires"
                   type="datetime-local"
@@ -195,9 +195,9 @@ export default function AdminDiscountsPage() {
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                  Cancel
+                  Отказ
                 </Button>
-                <Button type="submit">Create</Button>
+                <Button type="submit">Създай</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -208,7 +208,7 @@ export default function AdminDiscountsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Tag className="h-5 w-5" />
-            Active Discounts ({discounts.filter((d) => d.active).length})
+            Активни отстъпки ({discounts.filter((d) => d.active).length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -218,19 +218,19 @@ export default function AdminDiscountsPage() {
             </div>
           ) : discounts.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No discount codes yet
+              Все още няма кодове за отстъпка
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Discount</TableHead>
-                    <TableHead>Uses</TableHead>
-                    <TableHead>Valid Until</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Код</TableHead>
+                    <TableHead>Отстъпка</TableHead>
+                    <TableHead>Използвания</TableHead>
+                    <TableHead>Валиден до</TableHead>
+                    <TableHead>Статус</TableHead>
+                    <TableHead className="text-right">Действия</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -252,7 +252,7 @@ export default function AdminDiscountsPage() {
                       <TableCell>
                         {discount.valid_until
                           ? new Date(discount.valid_until).toLocaleDateString()
-                          : "Never"}
+                          : "Без срок"}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -263,7 +263,7 @@ export default function AdminDiscountsPage() {
                               : "bg-muted text-muted-foreground"
                           }
                         >
-                          {discount.active ? "Active" : "Inactive"}
+                          {discount.active ? "Активна" : "Неактивна"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -275,7 +275,7 @@ export default function AdminDiscountsPage() {
                               toggleActive(discount.id, discount.active)
                             }
                           >
-                            {discount.active ? "Deactivate" : "Activate"}
+                            {discount.active ? "Деактивирай" : "Активирай"}
                           </Button>
                           <Button
                             variant="ghost"

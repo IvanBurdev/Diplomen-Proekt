@@ -16,11 +16,11 @@ export default async function AdminDashboard() {
     supabase.from('products').select('*', { count: 'exact', head: true }),
     supabase.from('orders').select('*', { count: 'exact', head: true }),
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
-    supabase.from('orders').select('total_amount').eq('status', 'delivered'),
+    supabase.from('orders').select('total, status').in('status', ['delivered', 'return_requested']),
     supabase.from('reviews').select('*', { count: 'exact', head: true }).eq('is_approved', false),
   ])
 
-  const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0
+  const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.total), 0) || 0
 
   // Get recent orders
   const { data: recentOrders } = await supabase
@@ -30,7 +30,7 @@ export default async function AdminDashboard() {
     .limit(5)
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString('bg-BG', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
@@ -39,17 +39,17 @@ export default async function AdminDashboard() {
   }
 
   const stats = [
-    { title: 'Total Products', value: productCount || 0, icon: Package, color: 'text-blue-500' },
-    { title: 'Total Orders', value: orderCount || 0, icon: ShoppingCart, color: 'text-green-500' },
-    { title: 'Total Users', value: userCount || 0, icon: Users, color: 'text-purple-500' },
-    { title: 'Revenue', value: `$${totalRevenue.toFixed(2)}`, icon: DollarSign, color: 'text-primary' },
+    { title: 'Общо продукти', value: productCount || 0, icon: Package, color: 'text-blue-500' },
+    { title: 'Общо поръчки', value: orderCount || 0, icon: ShoppingCart, color: 'text-green-500' },
+    { title: 'Общо потребители', value: userCount || 0, icon: Users, color: 'text-purple-500' },
+    { title: 'Оборот', value: `€${totalRevenue.toFixed(2)}`, icon: DollarSign, color: 'text-primary' },
   ]
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-heading text-2xl font-bold text-foreground">Dashboard Overview</h2>
-        <p className="text-muted-foreground">Welcome back! Here's what's happening in your store.</p>
+        <h2 className="font-heading text-2xl font-bold text-foreground">Преглед на таблото</h2>
+        <p className="text-muted-foreground">Добре дошъл! Ето какво се случва в магазина.</p>
       </div>
 
       {/* Stats Grid */}
@@ -78,17 +78,17 @@ export default async function AdminDashboard() {
             <Star className="h-8 w-8 text-yellow-500" />
             <div className="flex-1">
               <p className="font-medium text-foreground">
-                {pendingReviewCount} reviews pending approval
+                {pendingReviewCount} отзива чакат одобрение
               </p>
               <p className="text-sm text-muted-foreground">
-                Review and approve customer feedback
+                Прегледай и одобри клиентските отзиви
               </p>
             </div>
             <a
               href="/admin/reviews"
               className="text-sm font-medium text-primary hover:underline"
             >
-              Review Now
+              Прегледай
             </a>
           </CardContent>
         </Card>
@@ -99,7 +99,7 @@ export default async function AdminDashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Recent Orders
+            Последни поръчки
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -111,15 +111,15 @@ export default async function AdminDashboard() {
               >
                 <div>
                   <p className="font-medium text-foreground">
-                    Order #{order.id.slice(0, 8).toUpperCase()}
+                    Поръчка #{order.id.slice(0, 8).toUpperCase()}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {order.profile?.full_name || order.profile?.email || 'Unknown'}
+                    {order.profile?.full_name || order.profile?.email || 'Неизвестен'}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="font-medium text-foreground">
-                    ${Number(order.total_amount).toFixed(2)}
+                    €{Number(order.total).toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {formatDate(order.created_at)}
@@ -128,7 +128,7 @@ export default async function AdminDashboard() {
               </div>
             ))}
             {(!recentOrders || recentOrders.length === 0) && (
-              <p className="text-center text-muted-foreground py-4">No orders yet</p>
+              <p className="text-center text-muted-foreground py-4">Все още няма поръчки</p>
             )}
           </div>
         </CardContent>

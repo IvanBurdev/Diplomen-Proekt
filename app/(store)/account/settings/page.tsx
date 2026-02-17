@@ -45,12 +45,12 @@ export default function SettingsPage() {
     setIsUpdating(false)
 
     if (error) {
-      toast.error('Failed to update profile')
+      toast.error('Неуспешно обновяване на профила')
       return
     }
 
     await refreshProfile()
-    toast.success('Profile updated successfully')
+    toast.success('Профилът е обновен успешно')
   }
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -58,12 +58,12 @@ export default function SettingsPage() {
     setPasswordError(null)
 
     if (newPassword !== confirmPassword) {
-      setPasswordError('Passwords do not match')
+      setPasswordError('Паролите не съвпадат')
       return
     }
 
     if (newPassword.length < 6) {
-      setPasswordError('Password must be at least 6 characters')
+      setPasswordError('Паролата трябва да е поне 6 символа')
       return
     }
 
@@ -76,19 +76,19 @@ export default function SettingsPage() {
     setIsChangingPassword(false)
 
     if (error) {
-      setPasswordError(error.message)
+      setPasswordError('Неуспешна смяна на паролата. Опитай отново.')
       return
     }
 
     setCurrentPassword('')
     setNewPassword('')
     setConfirmPassword('')
-    toast.success('Password changed successfully')
+    toast.success('Паролата е сменена успешно')
   }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="font-heading text-3xl font-bold text-foreground mb-8">Account Settings</h1>
+      <h1 className="font-heading text-3xl font-bold text-foreground mb-8">Настройки на профила</h1>
 
       <div className="space-y-6">
         {/* Profile Settings */}
@@ -96,14 +96,14 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Profile Information
+              Информация за профила
             </CardTitle>
-            <CardDescription>Update your personal details</CardDescription>
+            <CardDescription>Обнови личните си данни</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Имейл</Label>
                 <Input
                   id="email"
                   type="email"
@@ -112,12 +112,12 @@ export default function SettingsPage() {
                   className="mt-1 bg-muted"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Email cannot be changed
+                  Имейлът не може да се променя
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="fullName">Име и фамилия</Label>
                 <Input
                   id="fullName"
                   value={fullName}
@@ -130,10 +130,10 @@ export default function SettingsPage() {
                 {isUpdating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
+                    Запазване...
                   </>
                 ) : (
-                  'Save Changes'
+                  'Запази промените'
                 )}
               </Button>
             </form>
@@ -145,9 +145,9 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Lock className="h-5 w-5" />
-              Change Password
+              Смяна на парола
             </CardTitle>
-            <CardDescription>Update your account password</CardDescription>
+            <CardDescription>Обнови паролата на профила</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleChangePassword} className="space-y-4">
@@ -158,7 +158,7 @@ export default function SettingsPage() {
               )}
 
               <div>
-                <Label htmlFor="newPassword">New Password</Label>
+                <Label htmlFor="newPassword">Нова парола</Label>
                 <Input
                   id="newPassword"
                   type="password"
@@ -170,7 +170,7 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Label htmlFor="confirmPassword">Потвърди новата парола</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -185,10 +185,10 @@ export default function SettingsPage() {
                 {isChangingPassword ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Changing...
+                    Смяна...
                   </>
                 ) : (
-                  'Change Password'
+                  'Смени паролата'
                 )}
               </Button>
             </form>
@@ -198,15 +198,15 @@ export default function SettingsPage() {
         {/* Account Role */}
         <Card>
           <CardHeader>
-            <CardTitle>Account Type</CardTitle>
+            <CardTitle>Тип профил</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-foreground">
-              Your account role: <span className="font-medium capitalize">{profile?.role || 'user'}</span>
+              Роля на профила: <span className="font-medium capitalize">{profile?.role === 'admin' ? 'админ' : 'потребител'}</span>
             </p>
             {profile?.role === 'admin' && (
               <p className="mt-2 text-sm text-muted-foreground">
-                As an admin, you have access to the admin dashboard for managing products and orders.
+                Като админ имаш достъп до админ панела за управление на продукти и поръчки.
               </p>
             )}
           </CardContent>

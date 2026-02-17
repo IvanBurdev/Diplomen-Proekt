@@ -29,6 +29,8 @@ export interface Product {
   team: string | null
   season: string | null
   sizes: string[]
+  size_stock?: Record<string, number> | null
+  colors: string[]
   stock: number
   featured: boolean
   created_at: string
@@ -66,7 +68,14 @@ export interface Review {
   profiles?: Profile
 }
 
-export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+export type OrderStatus =
+  | 'pending'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled'
+  | 'return_requested'
+  | 'returned'
 
 export interface Order {
   id: string

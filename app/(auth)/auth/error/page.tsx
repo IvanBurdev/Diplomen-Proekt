@@ -10,23 +10,23 @@ export default function AuthErrorPage() {
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
           <AlertTriangle className="h-8 w-8 text-destructive" />
         </div>
-        <CardTitle className="font-heading text-2xl">Authentication Error</CardTitle>
+        <CardTitle className="font-heading text-2xl">Грешка при удостоверяване</CardTitle>
         <CardDescription>
-          Something went wrong during authentication.
+          Нещо се обърка по време на входа.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground">
-          This could be due to an expired link, invalid credentials, or a technical issue.
-          Please try again.
+          Това може да е заради изтекъл линк, невалидни данни или технически проблем.
+          Опитай отново.
         </p>
       </CardContent>
       <CardFooter className="justify-center gap-4">
         <Link href="/auth/login">
-          <Button>Try Again</Button>
+          <Button>Опитай отново</Button>
         </Link>
         <Link href="/">
-          <Button variant="outline">Go Home</Button>
+          <Button variant="outline">Към началото</Button>
         </Link>
       </CardFooter>
     </Card>

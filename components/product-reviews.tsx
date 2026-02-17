@@ -40,7 +40,7 @@ export function ProductReviews({ productId, reviews }: ProductReviewsProps) {
     e.preventDefault()
     
     if (!user) {
-      toast({ title: 'Error', description: 'Please sign in to leave a review', variant: 'destructive' })
+      toast({ title: 'Грешка', description: 'Влез в профила си, за да оставиш отзив', variant: 'destructive' })
       return
     }
 
@@ -59,11 +59,11 @@ export function ProductReviews({ productId, reviews }: ProductReviewsProps) {
     setIsSubmitting(false)
 
     if (error) {
-      toast({ title: 'Error', description: 'Failed to submit review', variant: 'destructive' })
+      toast({ title: 'Грешка', description: 'Неуспешно изпращане на отзива', variant: 'destructive' })
       return
     }
 
-    toast({ title: 'Success', description: 'Review submitted successfully!' })
+    toast({ title: 'Успех', description: 'Отзивът е изпратен успешно!' })
     setShowForm(false)
     setRating(5)
     setTitle('')
@@ -72,7 +72,7 @@ export function ProductReviews({ productId, reviews }: ProductReviewsProps) {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString('bg-BG', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -84,7 +84,7 @@ export function ProductReviews({ productId, reviews }: ProductReviewsProps) {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="font-serif text-2xl font-bold text-foreground">
-            Customer Reviews
+            Отзиви от клиенти
           </h2>
           {reviews.length > 0 && (
             <div className="mt-2 flex items-center gap-2">
@@ -102,7 +102,7 @@ export function ProductReviews({ productId, reviews }: ProductReviewsProps) {
                 ))}
               </div>
               <span className="text-sm text-muted-foreground">
-                {averageRating.toFixed(1)} out of 5 ({reviews.length} reviews)
+                {averageRating.toFixed(1)} от 5 ({reviews.length} отзива)
               </span>
             </div>
           )}
@@ -111,7 +111,7 @@ export function ProductReviews({ productId, reviews }: ProductReviewsProps) {
         {user && !showForm && (
           <Button onClick={() => setShowForm(true)} className="gap-2">
             <MessageSquare className="h-4 w-4" />
-            Write a Review
+            Напиши отзив
           </Button>
         )}
       </div>
@@ -119,12 +119,12 @@ export function ProductReviews({ productId, reviews }: ProductReviewsProps) {
       {showForm && user && (
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Write Your Review</CardTitle>
+            <CardTitle>Напиши своя отзив</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <Label>Your Rating</Label>
+                <Label>Твоята оценка</Label>
                 <div className="mt-2 flex gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -149,23 +149,23 @@ export function ProductReviews({ productId, reviews }: ProductReviewsProps) {
               </div>
 
               <div>
-                <Label htmlFor="title">Review Title (optional)</Label>
+                <Label htmlFor="title">Заглавие на отзива (по желание)</Label>
                 <Input
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Summarize your review"
+                  placeholder="Обобщи отзива си"
                   className="mt-2"
                 />
               </div>
 
               <div>
-                <Label htmlFor="comment">Your Review (optional)</Label>
+                <Label htmlFor="comment">Твоят отзив (по желание)</Label>
                 <Textarea
                   id="comment"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  placeholder="Tell others about your experience..."
+                  placeholder="Сподели впечатленията си..."
                   rows={4}
                   className="mt-2"
                 />
@@ -173,10 +173,10 @@ export function ProductReviews({ productId, reviews }: ProductReviewsProps) {
 
               <div className="flex gap-4">
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Submitting...' : 'Submit Review'}
+                  {isSubmitting ? 'Изпращане...' : 'Изпрати отзив'}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
+                  Отказ
                 </Button>
               </div>
             </form>
@@ -212,7 +212,7 @@ export function ProductReviews({ productId, reviews }: ProductReviewsProps) {
                       )}
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      by {review.profiles?.full_name || 'Anonymous'} on {formatDate(review.created_at)}
+                      от {review.profiles?.full_name || 'Анонимен'} на {formatDate(review.created_at)}
                     </p>
                   </div>
                 </div>
@@ -227,13 +227,13 @@ export function ProductReviews({ productId, reviews }: ProductReviewsProps) {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="font-medium text-foreground">No reviews yet</h3>
+            <h3 className="font-medium text-foreground">Все още няма отзиви</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Be the first to review this product!
+              Бъди първият с отзив за този продукт!
             </p>
             {user && !showForm && (
               <Button onClick={() => setShowForm(true)} className="mt-4">
-                Write a Review
+                Напиши отзив
               </Button>
             )}
           </CardContent>

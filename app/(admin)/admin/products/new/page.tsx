@@ -20,10 +20,10 @@ export default async function NewProductPage() {
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
         >
           <ChevronLeft className="mr-1 h-4 w-4" />
-          Back to Products
+          Назад към продуктите
         </Link>
-        <h2 className="font-heading text-2xl font-bold text-foreground">Add New Product</h2>
-        <p className="text-muted-foreground">Create a new product for your store</p>
+        <h2 className="font-heading text-2xl font-bold text-foreground">Добави нов продукт</h2>
+        <p className="text-muted-foreground">Създай нов продукт за магазина</p>
       </div>
 
       <ProductForm categories={(categories as Category[]) || []} />

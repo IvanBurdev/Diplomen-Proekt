@@ -20,16 +20,16 @@ export default function CartPage() {
       <div className="mx-auto max-w-7xl px-4 py-16">
         <div className="text-center">
           <ShoppingCart className="mx-auto h-16 w-16 text-muted-foreground" />
-          <h1 className="mt-4 font-heading text-2xl font-bold text-foreground">Your Cart</h1>
+          <h1 className="mt-4 font-heading text-2xl font-bold text-foreground">Твоята количка</h1>
           <p className="mt-2 text-muted-foreground">
-            Please sign in to view your cart
+            Влез в профила си, за да видиш количката
           </p>
           <div className="mt-6 flex justify-center gap-4">
             <Link href="/auth/login">
-              <Button>Sign In</Button>
+              <Button>Вход</Button>
             </Link>
             <Link href="/products">
-              <Button variant="outline">Continue Shopping</Button>
+              <Button variant="outline">Продължи с пазаруването</Button>
             </Link>
           </div>
         </div>
@@ -42,7 +42,7 @@ export default function CartPage() {
       <div className="mx-auto max-w-7xl px-4 py-16">
         <div className="text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading cart...</p>
+          <p className="mt-4 text-muted-foreground">Зареждане на количката...</p>
         </div>
       </div>
     )
@@ -53,13 +53,13 @@ export default function CartPage() {
       <div className="mx-auto max-w-7xl px-4 py-16">
         <div className="text-center">
           <ShoppingCart className="mx-auto h-16 w-16 text-muted-foreground" />
-          <h1 className="mt-4 font-heading text-2xl font-bold text-foreground">Your Cart is Empty</h1>
+          <h1 className="mt-4 font-heading text-2xl font-bold text-foreground">Количката е празна</h1>
           <p className="mt-2 text-muted-foreground">
-            Looks like you haven't added any items yet
+            Все още не си добавил продукти
           </p>
           <Link href="/products" className="mt-6 inline-block">
             <Button className="gap-2">
-              Start Shopping
+              Започни пазаруване
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
@@ -71,7 +71,7 @@ export default function CartPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="font-heading text-3xl font-bold text-foreground mb-8">
-        Shopping Cart ({itemCount} items)
+        Количка ({itemCount} продукта)
       </h1>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
@@ -85,7 +85,7 @@ export default function CartPage() {
                     {item.product?.image_url ? (
                       <Image
                         src={item.product.image_url || "/placeholder.svg"}
-                        alt={item.product?.name || 'Product'}
+                        alt={item.product?.name || 'Продукт'}
                         fill
                         className="object-cover"
                       />
@@ -106,7 +106,7 @@ export default function CartPage() {
                           {item.product?.name}
                         </Link>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          Size: {item.size} | Color: {item.color}
+                          Размер: {item.size} | Цвят: {item.color}
                         </p>
                       </div>
                       <Button
@@ -116,7 +116,7 @@ export default function CartPage() {
                         onClick={() => removeFromCart(item.id)}
                       >
                         <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Remove item</span>
+                        <span className="sr-only">Премахни продукт</span>
                       </Button>
                     </div>
 
@@ -144,7 +144,7 @@ export default function CartPage() {
                         </Button>
                       </div>
                       <span className="font-heading font-bold text-foreground">
-                        ${((item.product?.price || 0) * item.quantity).toFixed(2)}
+                        €{((item.product?.price || 0) * item.quantity).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -158,29 +158,29 @@ export default function CartPage() {
         <div className="lg:sticky lg:top-24 lg:self-start">
           <Card>
             <CardHeader>
-              <CardTitle>Order Summary</CardTitle>
+              <CardTitle>Обобщение на поръчката</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-medium text-foreground">${totalPrice.toFixed(2)}</span>
+                <span className="text-muted-foreground">Междинна сума</span>
+                <span className="font-medium text-foreground">€{totalPrice.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Shipping</span>
+                <span className="text-muted-foreground">Доставка</span>
                 <span className="font-medium text-foreground">
-                  {totalPrice >= 100 ? 'Free' : '$9.99'}
+                  {totalPrice >= 100 ? 'Безплатна' : '€9.99'}
                 </span>
               </div>
               <Separator />
               <div className="flex justify-between">
-                <span className="font-medium text-foreground">Total</span>
+                <span className="font-medium text-foreground">Общо</span>
                 <span className="font-heading text-xl font-bold text-foreground">
-                  ${(totalPrice + (totalPrice >= 100 ? 0 : 9.99)).toFixed(2)}
+                  €{(totalPrice + (totalPrice >= 100 ? 0 : 9.99)).toFixed(2)}
                 </span>
               </div>
               {totalPrice < 100 && (
                 <p className="text-xs text-muted-foreground">
-                  Add ${(100 - totalPrice).toFixed(2)} more for free shipping!
+                  Добави още €{(100 - totalPrice).toFixed(2)} за безплатна доставка!
                 </p>
               )}
             </CardContent>
@@ -190,12 +190,12 @@ export default function CartPage() {
                 size="lg"
                 onClick={() => router.push('/checkout')}
               >
-                Proceed to Checkout
+                Към завършване на поръчката
                 <ArrowRight className="h-4 w-4" />
               </Button>
               <Link href="/products" className="w-full">
                 <Button variant="outline" className="w-full bg-transparent">
-                  Continue Shopping
+                  Продължи с пазаруването
                 </Button>
               </Link>
             </CardFooter>

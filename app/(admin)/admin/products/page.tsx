@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
 import type { Product } from '@/lib/types'
+import { getCategoryLabelBg } from '@/lib/localization'
+import { normalizeSizeStock } from '@/lib/size-stock'
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<(Product & { category: { name: string } | null })[]>([])
@@ -41,7 +43,7 @@ export default function AdminProductsPage() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      toast({ title: 'Error', description: 'Failed to load products', variant: 'destructive' })
+      toast({ title: 'Грешка', description: 'Неуспешно зареждане на продуктите', variant: 'destructive' })
     } else {
       setProducts(data || [])
     }
@@ -56,9 +58,9 @@ export default function AdminProductsPage() {
       .eq('id', productId)
 
     if (error) {
-      toast({ title: 'Error', description: 'Failed to delete product', variant: 'destructive' })
+      toast({ title: 'Грешка', description: 'Неуспешно изтриване на продукта', variant: 'destructive' })
     } else {
-      toast({ title: 'Success', description: 'Product deleted successfully' })
+      toast({ title: 'Успех', description: 'Продуктът е изтрит успешно' })
       setProducts(products.filter(p => p.id !== productId))
     }
     setDeletingId(null)
@@ -76,13 +78,13 @@ export default function AdminProductsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-serif text-2xl font-bold text-foreground">Products</h2>
-          <p className="text-muted-foreground">Manage your product catalog</p>
+          <h2 className="font-serif text-2xl font-bold text-foreground">Продукти</h2>
+          <p className="text-muted-foreground">Управлявай продуктовия каталог</p>
         </div>
         <Link href="/admin/products/new">
           <Button className="gap-2">
             <Plus className="h-4 w-4" />
-            Add Product
+            Добави продукт
           </Button>
         </Link>
       </div>
@@ -95,7 +97,7 @@ export default function AdminProductsPage() {
                 <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
                   {product.image_url ? (
                     <Image
-                      src={product.image_url || "/placeholder.svg"}
+                      src={product.image_url || '/placeholder.svg'}
                       alt={product.name}
                       fill
                       className="object-cover"
@@ -111,46 +113,54 @@ export default function AdminProductsPage() {
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium text-foreground truncate">{product.name}</h3>
                     {product.featured && (
-                      <Badge variant="secondary">Featured</Badge>
+                      <Badge variant="secondary">Избрано</Badge>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {product.category?.name} | ${product.price.toFixed(2)}
+                    {getCategoryLabelBg(product.category || {})} | €{product.price.toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Stock: {product.stock} | SKU: {product.slug}
+                    Наличност: {product.stock} | SKU: {product.slug}
                   </p>
+                  {product.sizes?.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      По размери:{' '}
+                      {product.sizes
+                        .map((size) => `${size}: ${normalizeSizeStock(product.size_stock)[size] ?? 0}`)
+                        .join(' | ')}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">
                   <Link href={`/products/${product.slug}`}>
                     <Button variant="ghost" size="icon">
                       <Eye className="h-4 w-4" />
-                      <span className="sr-only">View</span>
+                      <span className="sr-only">Преглед</span>
                     </Button>
                   </Link>
                   <Link href={`/admin/products/${product.id}/edit`}>
                     <Button variant="ghost" size="icon">
                       <Edit className="h-4 w-4" />
-                      <span className="sr-only">Edit</span>
+                      <span className="sr-only">Редакция</span>
                     </Button>
                   </Link>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
                         <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Delete</span>
+                        <span className="sr-only">Изтрий</span>
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                        <AlertDialogTitle>Изтриване на продукт</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to delete &quot;{product.name}&quot;? This action cannot be undone.
+                          Сигурен ли си, че искаш да изтриеш &quot;{product.name}&quot;? Това действие не може да бъде отменено.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>Отказ</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => deleteProduct(product.id)}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -159,7 +169,7 @@ export default function AdminProductsPage() {
                           {deletingId === product.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            'Delete'
+                            'Изтрий'
                           )}
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -175,14 +185,14 @@ export default function AdminProductsPage() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Package className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="font-medium text-foreground">No products yet</h3>
+              <h3 className="font-medium text-foreground">Все още няма продукти</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Get started by adding your first product
+                Започни, като добавиш първия си продукт
               </p>
               <Link href="/admin/products/new" className="mt-4">
                 <Button className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Add Product
+                  Добави продукт
                 </Button>
               </Link>
             </CardContent>

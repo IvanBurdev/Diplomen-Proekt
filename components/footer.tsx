@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { Facebook, Twitter, Instagram, Youtube } from 'lucide-react'
 
 export function Footer() {
   return (
@@ -14,101 +13,79 @@ export function Footer() {
               <span className="font-heading text-xl font-bold tracking-tight text-foreground">KitZone</span>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
-              Your destination for authentic football kits from the world's top clubs.
+              Твоето място за автентични футболни екипи от най-големите клубове в света.
             </p>
-            <div className="mt-4 flex gap-4">
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                <Facebook className="h-5 w-5" />
-                <span className="sr-only">Facebook</span>
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                <Twitter className="h-5 w-5" />
-                <span className="sr-only">Twitter</span>
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                <Instagram className="h-5 w-5" />
-                <span className="sr-only">Instagram</span>
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                <Youtube className="h-5 w-5" />
-                <span className="sr-only">YouTube</span>
-              </a>
-            </div>
           </div>
 
           <div>
-            <h3 className="font-heading font-semibold text-foreground">Shop</h3>
+            <h3 className="font-heading font-semibold text-foreground">Магазин</h3>
             <ul className="mt-4 space-y-2">
               <li>
                 <Link href="/products" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  All Products
+                  Всички продукти
                 </Link>
               </li>
               <li>
                 <Link href="/products?category=home-kits" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Home Kits
+                  Домакински екипи
                 </Link>
               </li>
               <li>
                 <Link href="/products?category=away-kits" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Away Kits
+                  Гостуващи екипи
                 </Link>
               </li>
               <li>
-                <Link href="/products?category=training-gear" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Training Gear
+                <Link href="/products?category=training-wear" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Тренировъчна екипировка
+                </Link>
+              </li>
+              <li>
+                <Link href="/products?category=retro-classics" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Ретро екипи
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-heading font-semibold text-foreground">Support</h3>
+            <h3 className="font-heading font-semibold text-foreground">Помощ</h3>
             <ul className="mt-4 space-y-2">
               <li>
-                <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Contact Us
+                <Link href="/support" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Свържи се с нас и ЧЗВ
                 </Link>
               </li>
               <li>
-                <Link href="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  FAQ
+                <Link href="/shipping-returns" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Поръчки, доставка и връщане
                 </Link>
               </li>
-              <li>
-                <Link href="/shipping" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Shipping Info
-                </Link>
-              </li>
-              <li>
-                <Link href="/returns" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Returns
-                </Link>
-              </li>
+              
             </ul>
           </div>
 
           <div>
-            <h3 className="font-heading font-semibold text-foreground">Company</h3>
+            <h3 className="font-heading font-semibold text-foreground">Компания</h3>
             <ul className="mt-4 space-y-2">
               <li>
                 <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  About Us
+                  За нас
                 </Link>
               </li>
               <li>
                 <Link href="/careers" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Careers
+                  Кариери
                 </Link>
               </li>
               <li>
                 <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Privacy Policy
+                  Политика за поверителност
                 </Link>
               </li>
               <li>
                 <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Terms of Service
+                  Общи условия
                 </Link>
               </li>
             </ul>
@@ -117,10 +94,11 @@ export function Footer() {
 
         <div className="mt-8 border-t border-border pt-8">
           <p className="text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} KitZone. All rights reserved.
+            © {new Date().getFullYear()} KitZone. Всички права запазени.
           </p>
         </div>
       </div>
     </footer>
   )
 }
+

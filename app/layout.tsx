@@ -3,15 +3,16 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Oswald } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/toaster'
+import { Providers } from '@/components/providers'
 import './globals.css'
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const oswald = Oswald({ subsets: ["latin"], variable: "--font-oswald" });
 
 export const metadata: Metadata = {
-  title: 'KitZone - Premium Football Kits',
-  description: 'Shop the latest football kits, jerseys, and gear from top clubs worldwide. Free shipping on orders over $100.',
-  keywords: ['football kits', 'soccer jerseys', 'team gear', 'sports apparel'],
+  title: 'KitZone - Премиум футболни екипи',
+  description: 'Пазарувай най-новите футболни екипи, фланелки и артикули от водещи клубове по света. Безплатна доставка за поръчки над 100 €.',
+  keywords: ['футболни екипи', 'футболни фланелки', 'спортно облекло', 'екипи на отбори'],
     generator: 'v0.app'
 }
 
@@ -25,9 +26,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="bg">
       <body className={`${inter.variable} ${oswald.variable} font-sans antialiased`}>
-        {children}
+        <Providers>{children}</Providers>
         <Toaster />
         <Analytics />
       </body>

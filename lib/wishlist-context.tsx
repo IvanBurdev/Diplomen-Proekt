@@ -49,7 +49,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
   const toggleWishlist = useCallback(async (product: Product) => {
     if (!user) {
-      toast.error('Please sign in to manage wishlist')
+      toast.error('Влез в профила си, за да управляваш любими')
       return
     }
 
@@ -62,11 +62,11 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         .eq('id', existing.id)
 
       if (error) {
-        toast.error('Failed to remove from wishlist')
+        toast.error('Неуспешно премахване от любими')
         return
       }
 
-      toast.success('Removed from wishlist')
+      toast.success('Премахнато от любими')
     } else {
       const { error } = await supabase
         .from('wishlist')
@@ -76,11 +76,11 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         })
 
       if (error) {
-        toast.error('Failed to add to wishlist')
+        toast.error('Неуспешно добавяне в любими')
         return
       }
 
-      toast.success('Added to wishlist')
+      toast.success('Добавено в любими')
     }
 
     mutate(`wishlist-${user.id}`)
@@ -96,12 +96,12 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       .eq('product_id', productId)
 
     if (error) {
-      toast.error('Failed to remove from wishlist')
+      toast.error('Неуспешно премахване от любими')
       return
     }
 
     mutate(`wishlist-${user.id}`)
-    toast.success('Removed from wishlist')
+    toast.success('Премахнато от любими')
   }, [user, supabase])
 
   return (
