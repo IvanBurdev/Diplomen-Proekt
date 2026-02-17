@@ -59,35 +59,53 @@ export default function AdminOrderDetailPage({
     fetchOrder()
   }, [id])
 
+  function getErrorMessage(error: unknown, fallback: string) {
+    if (typeof error === 'object' && error && 'message' in error && typeof (error as { message?: unknown }).message === 'string') {
+      return (error as { message: string }).message
+    }
+    return fallback
+  }
+
   async function fetchOrder() {
     setLoading(true)
-    
-    // Fetch order with items
-    const { data: orderData, error: orderError } = await supabase
-      .from('orders')
-      .select('*, order_items(*, products(*))')
-      .eq('id', id)
-      .single()
 
-    if (orderError) {
-      toast({ title: 'Грешка', description: 'Неуспешно зареждане на поръчката', variant: 'destructive' })
-      console.error('[v0] Order fetch error:', orderError)
+    try {
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select('*, order_items(*, products(*))')
+        .eq('id', id)
+        .single()
+
+      if (orderError || !orderData) {
+        toast({
+          title: 'Грешка',
+          description: getErrorMessage(orderError, 'Неуспешно зареждане на поръчката'),
+          variant: 'destructive',
+        })
+        setOrder(null)
+        return
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', orderData.user_id)
+        .single()
+
+      setOrder({
+        ...orderData,
+        customer: profile || { full_name: null, email: 'Неизвестен' },
+      })
+    } catch (error) {
+      toast({
+        title: 'Грешка',
+        description: getErrorMessage(error, 'Възникна неочаквана грешка при зареждане на поръчката.'),
+        variant: 'destructive',
+      })
+      setOrder(null)
+    } finally {
       setLoading(false)
-      return
     }
-
-    // Fetch profile separately
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name, email')
-      .eq('id', orderData.user_id)
-      .single()
-
-    setOrder({
-      ...orderData,
-      customer: profile || { full_name: null, email: 'Неизвестен' },
-    })
-    setLoading(false)
   }
 
   async function updateOrderStatus(newStatus: string) {

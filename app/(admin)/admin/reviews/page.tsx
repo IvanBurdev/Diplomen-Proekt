@@ -33,27 +33,36 @@ export default function AdminReviewsPage() {
 
   async function fetchReviews() {
     setLoading(true);
-    let query = supabase
-      .from("reviews")
-      .select("*, products(*)")
-      .order("created_at", { ascending: false });
+    try {
+      let query = supabase
+        .from("reviews")
+        .select("*, products(*)")
+        .order("created_at", { ascending: false });
 
-    if (ratingFilter !== "all") {
-      query = query.eq("rating", parseInt(ratingFilter));
-    }
+      if (ratingFilter !== "all") {
+        query = query.eq("rating", parseInt(ratingFilter));
+      }
 
-    const { data, error } = await query;
+      const { data, error } = await query;
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Грешка",
+          description: error.message || "Неуспешно зареждане на отзивите.",
+          variant: "destructive",
+        });
+      } else {
+        setReviews((data as ReviewWithDetails[]) || []);
+      }
+    } catch {
       toast({
         title: "Грешка",
-        description: "Неуспешно зареждане на отзивите",
+        description: "Възникна неочаквана грешка при зареждане на отзивите",
         variant: "destructive",
       });
-    } else {
-      setReviews((data as ReviewWithDetails[]) || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   async function deleteReview(id: string) {

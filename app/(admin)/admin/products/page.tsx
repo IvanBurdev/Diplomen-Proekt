@@ -37,17 +37,22 @@ export default function AdminProductsPage() {
 
   async function fetchProducts() {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('products')
-      .select('*, category:categories(name)')
-      .order('created_at', { ascending: false })
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*, category:categories(name)')
+        .order('created_at', { ascending: false })
 
-    if (error) {
-      toast({ title: 'Грешка', description: 'Неуспешно зареждане на продуктите', variant: 'destructive' })
-    } else {
-      setProducts(data || [])
+      if (error) {
+        toast({ title: 'Грешка', description: error.message || 'Неуспешно зареждане на продуктите', variant: 'destructive' })
+      } else {
+        setProducts(data || [])
+      }
+    } catch {
+      toast({ title: 'Грешка', description: 'Възникна неочаквана грешка при зареждане на продуктите', variant: 'destructive' })
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   async function deleteProduct(productId: string) {

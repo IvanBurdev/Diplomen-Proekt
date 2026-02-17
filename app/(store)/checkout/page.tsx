@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast'
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { user, profile } = useAuth()
+  const { user, profile, isLoading: authLoading } = useAuth()
   const { items, totalPrice, clearCart } = useCart()
   const supabase = createBrowserClient()
   const { toast } = useToast()
@@ -47,9 +47,18 @@ export default function CheckoutPage() {
   const discountAmount = appliedDiscount ? (totalPrice * appliedDiscount.percent) / 100 : 0
   const finalTotal = totalPrice - discountAmount + shipping
 
-  if (!user) {
-    router.push('/auth/login')
-    return null
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth/login')
+    }
+  }, [authLoading, user, router])
+
+  if (authLoading || !user) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-16 text-center">
+        <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
   if (orderPlaced) {
@@ -136,6 +145,8 @@ export default function CheckoutPage() {
 
     setIsProcessing(true)
 
+    let createdOrderId: string | null = null
+
     try {
       const addressData = {
         fullName: shippingAddress.fullName,
@@ -160,6 +171,7 @@ export default function CheckoutPage() {
         .single()
 
       if (orderError) throw orderError
+      createdOrderId = order.id
 
       const orderItems = items.map((item) => ({
         order_id: order.id,
@@ -173,7 +185,13 @@ export default function CheckoutPage() {
         .from('order_items')
         .insert(orderItems)
 
-      if (itemsError) throw itemsError
+      if (itemsError) {
+        // If stock validation fails in DB trigger, remove the just-created empty order.
+        if (createdOrderId) {
+          await supabase.from('orders').delete().eq('id', createdOrderId).eq('user_id', user.id)
+        }
+        throw itemsError
+      }
 
       if (appliedDiscount) {
         const { data: discountData } = await supabase
@@ -211,8 +229,12 @@ export default function CheckoutPage() {
 
       toast({ title: 'Успех', description: 'Поръчката е приета успешно!' })
       setOrderPlaced(true)
-    } catch {
-      toast({ title: 'Грешка', description: 'Неуспешна поръчка. Опитай отново.', variant: 'destructive' })
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'Неуспешна поръчка. Опитай отново.'
+      toast({ title: 'Грешка', description: message, variant: 'destructive' })
     } finally {
       setIsProcessing(false)
     }

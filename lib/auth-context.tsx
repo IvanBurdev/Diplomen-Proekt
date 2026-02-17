@@ -20,17 +20,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    
-    if (data) {
-      setProfile(data as Profile)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      if (error) {
+        setProfile(null)
+        return
+      }
+
+      if (data) {
+        setProfile(data as Profile)
+      } else {
+        setProfile(null)
+      }
+    } catch {
+      setProfile(null)
     }
   }, [supabase])
 
@@ -42,37 +53,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      
-      if (user) {
-        await fetchProfile(user.id)
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        setUser(user)
+
+        if (user) {
+          await fetchProfile(user.id)
+        } else {
+          setProfile(null)
+        }
+      } finally {
+        setIsLoading(false)
       }
-      
-      setIsLoading(false)
     }
 
     getUser()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null)
-      
-      if (session?.user) {
-        await fetchProfile(session.user.id)
-      } else {
-        setProfile(null)
+      try {
+        setUser(session?.user ?? null)
+
+        if (session?.user) {
+          await fetchProfile(session.user.id)
+        } else {
+          setProfile(null)
+        }
+      } finally {
+        setIsLoading(false)
       }
-      
-      setIsLoading(false)
     })
 
     return () => subscription.unsubscribe()
   }, [supabase, fetchProfile])
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-    setProfile(null)
+    try {
+      await supabase.auth.signOut()
+    } finally {
+      // Always clear local auth state even if network/API call fails.
+      setUser(null)
+      setProfile(null)
+      if (typeof window !== 'undefined') {
+        window.location.href = '/'
+      }
+    }
   }
 
   return (

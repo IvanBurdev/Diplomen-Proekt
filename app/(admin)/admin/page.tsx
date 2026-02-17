@@ -23,11 +23,23 @@ export default async function AdminDashboard() {
   const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.total), 0) || 0
 
   // Get recent orders
-  const { data: recentOrders } = await supabase
+  const { data: recentOrdersRaw } = await supabase
     .from('orders')
-    .select('*, profile:profiles(full_name, email)')
+    .select('id, user_id, total, created_at')
     .order('created_at', { ascending: false })
     .limit(5)
+
+  const userIds = [...new Set((recentOrdersRaw || []).map((order) => order.user_id))]
+  let profileMap = new Map<string, { full_name: string | null; email: string }>()
+
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', userIds)
+
+    profileMap = new Map((profiles || []).map((p) => [p.id, { full_name: p.full_name, email: p.email }]))
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('bg-BG', {
@@ -104,7 +116,7 @@ export default async function AdminDashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {recentOrders?.map((order) => (
+            {recentOrdersRaw?.map((order) => (
               <div
                 key={order.id}
                 className="flex items-center justify-between border-b border-border pb-4 last:border-0 last:pb-0"
@@ -114,7 +126,7 @@ export default async function AdminDashboard() {
                     Поръчка #{order.id.slice(0, 8).toUpperCase()}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {order.profile?.full_name || order.profile?.email || 'Неизвестен'}
+                    {profileMap.get(order.user_id)?.full_name || profileMap.get(order.user_id)?.email || 'Неизвестен'}
                   </p>
                 </div>
                 <div className="text-right">
@@ -127,7 +139,7 @@ export default async function AdminDashboard() {
                 </div>
               </div>
             ))}
-            {(!recentOrders || recentOrders.length === 0) && (
+            {(!recentOrdersRaw || recentOrdersRaw.length === 0) && (
               <p className="text-center text-muted-foreground py-4">Все още няма поръчки</p>
             )}
           </div>

@@ -49,17 +49,22 @@ export default function AdminDiscountsPage() {
 
   async function fetchDiscounts() {
     setLoading(true)
-    const { data, error } = await supabase
-      .from("discount_codes")
-      .select("*")
-      .order("created_at", { ascending: false })
+    try {
+      const { data, error } = await supabase
+        .from("discount_codes")
+        .select("*")
+        .order("created_at", { ascending: false })
 
-    if (error) {
-      toast({ title: "Грешка", description: "Неуспешно зареждане на кодовете", variant: "destructive" })
-    } else {
-      setDiscounts(data || [])
+      if (error) {
+        toast({ title: "Грешка", description: error.message || "Неуспешно зареждане на кодовете", variant: "destructive" })
+      } else {
+        setDiscounts(data || [])
+      }
+    } catch {
+      toast({ title: "Грешка", description: "Възникна неочаквана грешка при зареждане на кодовете", variant: "destructive" })
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   async function handleSubmit(e: React.FormEvent) {

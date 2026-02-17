@@ -80,48 +80,109 @@ export default function AdminOrdersPage() {
   const { toast } = useToast()
 
   useEffect(() => {
-    fetchOrders()
+    let isCancelled = false
+    void fetchOrders(() => isCancelled)
+
+    return () => {
+      isCancelled = true
+    }
   }, [statusFilter])
 
-  async function fetchOrders() {
+  function getErrorMessage(error: unknown, fallback: string) {
+    if (typeof error === 'object' && error && 'message' in error && typeof (error as { message?: unknown }).message === 'string') {
+      return (error as { message: string }).message
+    }
+    return fallback
+  }
+
+  async function fetchOrders(isCancelled?: () => boolean) {
     setLoading(true)
-    
-    let query = supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false })
+    try {
+      let query = supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false })
 
-    if (statusFilter !== 'all') {
-      query = query.eq('status', statusFilter)
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter)
+      }
+
+      const ordersResult = await Promise.race([
+        query,
+        new Promise<{ data: null; error: { message: string } }>((resolve) =>
+          setTimeout(() => resolve({ data: null, error: { message: 'Зареждането изтече (timeout).' } }), 12000)
+        ),
+      ])
+      const { data: ordersData, error } = ordersResult
+
+      if (error) {
+        if (isCancelled?.()) {
+          return
+        }
+        toast({
+          title: 'Грешка',
+          description: getErrorMessage(error, 'Неуспешно зареждане на поръчките'),
+          variant: 'destructive',
+        })
+        setOrders([])
+        return
+      }
+
+      const userIds = [...new Set((ordersData || []).map((o) => o.user_id))]
+      let profileMap = new Map<string, { id: string; full_name: string | null; email: string }>()
+
+      if (userIds.length > 0) {
+        const profilesResult = await Promise.race([
+          supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', userIds),
+          new Promise<{ data: null; error: { message: string } }>((resolve) =>
+            setTimeout(() => resolve({ data: null, error: { message: 'Зареждането на профили изтече (timeout).' } }), 12000)
+          ),
+        ])
+        const { data: profiles, error: profilesError } = profilesResult
+
+        if (profilesError) {
+          if (isCancelled?.()) {
+            return
+          }
+          toast({
+            title: 'Предупреждение',
+            description: 'Поръчките са заредени, но не можахме да заредим профилите на клиентите.',
+            variant: 'destructive',
+          })
+        } else {
+          profileMap = new Map((profiles || []).map((p) => [p.id, p]))
+        }
+      }
+
+      const ordersWithProfiles = (ordersData || []).map((order) => ({
+        ...order,
+        user_email: profileMap.get(order.user_id)?.email || 'Неизвестен',
+        user_name: profileMap.get(order.user_id)?.full_name || 'Гост',
+      }))
+
+      if (isCancelled?.()) {
+        return
+      }
+      setOrders(ordersWithProfiles)
+    } catch (error) {
+      if (isCancelled?.()) {
+        return
+      }
+
+      toast({
+        title: 'Грешка',
+        description: getErrorMessage(error, 'Възникна неочаквана грешка при зареждане на поръчките.'),
+        variant: 'destructive',
+      })
+      setOrders([])
+    } finally {
+      if (!isCancelled?.()) {
+        setLoading(false)
+      }
     }
-
-    const { data: ordersData, error } = await query
-
-    if (error) {
-      toast({ title: 'Грешка', description: 'Неуспешно зареждане на поръчките', variant: 'destructive' })
-      console.error('[v0] Orders fetch error:', error)
-      setLoading(false)
-      return
-    }
-
-    // Fetch profiles separately for each unique user_id
-    const userIds = [...new Set((ordersData || []).map(o => o.user_id))]
-    
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, full_name, email')
-      .in('id', userIds)
-
-    const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
-
-    const ordersWithProfiles = (ordersData || []).map(order => ({
-      ...order,
-      user_email: profileMap.get(order.user_id)?.email || 'Неизвестен',
-      user_name: profileMap.get(order.user_id)?.full_name || 'Гост',
-    }))
-
-    setOrders(ordersWithProfiles)
-    setLoading(false)
   }
 
   async function updateOrderStatus(orderId: string, newStatus: string) {

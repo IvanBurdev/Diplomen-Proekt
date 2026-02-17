@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
@@ -16,7 +16,7 @@ import { toast } from 'sonner'
 
 export default function SettingsPage() {
   const router = useRouter()
-  const { user, profile, refreshProfile } = useAuth()
+  const { user, profile, refreshProfile, isLoading: authLoading } = useAuth()
   const supabase = createClient()
 
   const [fullName, setFullName] = useState(profile?.full_name || '')
@@ -28,9 +28,20 @@ export default function SettingsPage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
 
-  if (!user) {
-    router.push('/auth/login')
-    return null
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth/login')
+    }
+  }, [authLoading, user, router])
+
+  if (authLoading || !user) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    )
   }
 
   const handleUpdateProfile = async (e: React.FormEvent) => {

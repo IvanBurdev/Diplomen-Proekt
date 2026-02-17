@@ -87,71 +87,77 @@ export function ProductForm({ product, categories }: ProductFormProps) {
     e.preventDefault()
     setIsSubmitting(true)
 
-    const normalizedSizeStock = formData.sizes.reduce<Record<string, number>>((acc, size) => {
-      acc[size] = Math.max(0, Math.floor(Number(formData.size_stock[size] ?? 0)))
-      return acc
-    }, {})
+    try {
+      const normalizedSizeStock = formData.sizes.reduce<Record<string, number>>((acc, size) => {
+        acc[size] = Math.max(0, Math.floor(Number(formData.size_stock[size] ?? 0)))
+        return acc
+      }, {})
 
-    const productData = {
-      name: formData.name,
-      slug: formData.slug || generateSlug(formData.name),
-      description: formData.description || null,
-      price: parseFloat(formData.price),
-      original_price: formData.original_price ? parseFloat(formData.original_price) : null,
-      category_id: formData.category_id,
-      image_url: formData.image_url || null,
-      team: formData.team || null,
-      season: formData.season || null,
-      stock: hasSizedInventory ? totalSizeStock : parseInt(formData.stock),
-      featured: formData.featured,
-      sizes: formData.sizes,
-      size_stock: normalizedSizeStock,
-      colors: formData.colors,
-    }
+      const productData = {
+        name: formData.name,
+        slug: formData.slug || generateSlug(formData.name),
+        description: formData.description || null,
+        price: parseFloat(formData.price),
+        original_price: formData.original_price ? parseFloat(formData.original_price) : null,
+        category_id: formData.category_id,
+        image_url: formData.image_url || null,
+        team: formData.team || null,
+        season: formData.season || null,
+        stock: hasSizedInventory ? totalSizeStock : parseInt(formData.stock),
+        featured: formData.featured,
+        sizes: formData.sizes,
+        size_stock: normalizedSizeStock,
+        colors: formData.colors,
+      }
 
-    if (isEditing && product) {
-      const { error } = await supabase
-        .from('products')
-        .update(productData)
-        .eq('id', product.id)
+      if (!productData.category_id) {
+        toast({
+          title: 'Грешка',
+          description: 'Избери категория на продукта.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      const request = isEditing && product
+        ? supabase
+            .from('products')
+            .update(productData)
+            .eq('id', product.id)
+        : supabase
+            .from('products')
+            .insert(productData)
+
+      const { error } = await request
 
       if (error) {
         toast({
           title: 'Грешка',
-          description: 'Неуспешно обновяване на продукта: ' + error.message,
+          description: `${isEditing ? 'Неуспешно обновяване' : 'Неуспешно създаване'} на продукта: ${error.message}`,
           variant: 'destructive',
         })
-        setIsSubmitting(false)
         return
       }
 
       toast({
         title: 'Успех',
-        description: 'Продуктът е обновен успешно',
+        description: isEditing ? 'Продуктът е обновен успешно' : 'Продуктът е създаден успешно',
       })
-    } else {
-      const { error } = await supabase
-        .from('products')
-        .insert(productData)
 
-      if (error) {
-        toast({
-          title: 'Грешка',
-          description: 'Неуспешно създаване на продукта: ' + error.message,
-          variant: 'destructive',
-        })
-        setIsSubmitting(false)
-        return
-      }
-
+      router.replace('/admin/products')
+      router.refresh()
+    } catch (error) {
       toast({
-        title: 'Успех',
-        description: 'Продуктът е създаден успешно',
+        title: 'Грешка',
+        description:
+          error instanceof Error
+            ? `Възникна грешка: ${error.message}`
+            : 'Възникна неочаквана грешка при запис.',
+        variant: 'destructive',
       })
+    } finally {
+      setIsSubmitting(false)
     }
-
-    router.push('/admin/products')
-    router.refresh()
   }
 
   const toggleSize = (size: string) => {

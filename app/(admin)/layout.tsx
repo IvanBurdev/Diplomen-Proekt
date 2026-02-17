@@ -4,6 +4,10 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { AdminSidebar } from '@/components/admin-sidebar'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
+
 export default async function AdminLayout({
   children,
 }: {
@@ -17,13 +21,13 @@ export default async function AdminLayout({
     redirect('/auth/login')
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'admin') {
+  if (profileError || profile?.role !== 'admin') {
     redirect('/')
   }
 
