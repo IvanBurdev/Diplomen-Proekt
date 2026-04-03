@@ -32,6 +32,7 @@ export interface Product {
   size_stock?: Record<string, number> | null
   colors: string[]
   stock: number
+  stock_quantity?: number
   featured: boolean
   created_at: string
   updated_at: string
@@ -44,6 +45,7 @@ export interface CartItem {
   product_id: string
   quantity: number
   size: string | null
+  color: string | null
   created_at: string
   product?: Product
 }

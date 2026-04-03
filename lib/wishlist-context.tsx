@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useCallback, useMemo, type ReactNode } from 'react'
 import useSWR, { mutate } from 'swr'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
@@ -24,8 +24,21 @@ const fetcher = async (userId: string): Promise<WishlistItem[]> => {
   const { data, error } = await supabase
     .from('wishlist')
     .select(`
-      *,
-      product:products(*)
+      id,
+      user_id,
+      product_id,
+      created_at,
+      product:products(
+        id,
+        name,
+        slug,
+        price,
+        original_price,
+        image_url,
+        featured,
+        stock,
+        category:categories(id, name, slug)
+      )
     `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
@@ -36,16 +49,19 @@ const fetcher = async (userId: string): Promise<WishlistItem[]> => {
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   
   const { data: items = [], isLoading } = useSWR(
     user ? `wishlist-${user.id}` : null,
-    () => fetcher(user!.id)
+    () => fetcher(user!.id),
+    { revalidateOnFocus: false }
   )
 
+  const wishlistIds = useMemo(() => new Set(items.map((item) => item.product_id)), [items])
+
   const isInWishlist = useCallback((productId: string) => {
-    return items.some(item => item.product_id === productId)
-  }, [items])
+    return wishlistIds.has(productId)
+  }, [wishlistIds])
 
   const toggleWishlist = useCallback(async (product: Product) => {
     if (!user) {
@@ -104,14 +120,16 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     toast.success('Премахнато от любими')
   }, [user, supabase])
 
+  const value = useMemo(() => ({
+    items,
+    isLoading,
+    isInWishlist,
+    toggleWishlist,
+    removeFromWishlist,
+  }), [items, isLoading, isInWishlist, toggleWishlist, removeFromWishlist])
+
   return (
-    <WishlistContext.Provider value={{
-      items,
-      isLoading,
-      isInWishlist,
-      toggleWishlist,
-      removeFromWishlist,
-    }}>
+    <WishlistContext.Provider value={value}>
       {children}
     </WishlistContext.Provider>
   )

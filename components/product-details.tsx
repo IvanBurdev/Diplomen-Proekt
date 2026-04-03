@@ -59,7 +59,7 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
     if ((sizes.length > 0 && !selectedSize) || availableStock <= 0) return
     
     setIsAddingToCart(true)
-    await addToCart(product, quantity, selectedSize)
+    await addToCart(product, quantity, selectedSize, selectedColor)
     setIsAddingToCart(false)
   }
 

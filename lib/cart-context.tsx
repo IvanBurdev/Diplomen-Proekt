@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useCallback, useMemo, type ReactNode } from 'react'
 import useSWR, { mutate } from 'swr'
 import { createBrowserClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
@@ -12,7 +12,7 @@ interface CartContextType {
   isLoading: boolean
   itemCount: number
   totalPrice: number
-  addToCart: (product: Product, quantity: number, size: string) => Promise<void>
+  addToCart: (product: Product, quantity: number, size: string, color: string) => Promise<void>
   updateQuantity: (itemId: string, quantity: number) => Promise<void>
   removeFromCart: (itemId: string) => Promise<void>
   clearCart: () => Promise<void>
@@ -27,7 +27,13 @@ const fetcher = async (userId: string): Promise<CartItem[]> => {
   const { data, error } = await supabase
     .from('cart_items')
     .select(`
-      *,
+      id,
+      user_id,
+      product_id,
+      quantity,
+      size,
+      color,
+      created_at,
       product:products(*)
     `)
     .eq('user_id', userId)
@@ -39,28 +45,29 @@ const fetcher = async (userId: string): Promise<CartItem[]> => {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const supabase = createBrowserClient()
+  const supabase = useMemo(() => createBrowserClient(), [])
   const { toast } = useToast()
   
   const { data: items = [], isLoading } = useSWR(
     user ? `cart-${user.id}` : null,
-    () => fetcher(user!.id)
+    () => fetcher(user!.id),
+    { revalidateOnFocus: false }
   )
 
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
-  const totalPrice = items.reduce((sum, item) => {
+  const itemCount = useMemo(() => items.reduce((sum, item) => sum + item.quantity, 0), [items])
+  const totalPrice = useMemo(() => items.reduce((sum, item) => {
     const price = item.product?.price ?? 0
     return sum + (price * item.quantity)
-  }, 0)
+  }, 0), [items])
 
-  const addToCart = useCallback(async (product: Product, quantity: number, size: string) => {
+  const addToCart = useCallback(async (product: Product, quantity: number, size: string, color: string) => {
     if (!user) {
       toast({ title: 'Грешка', description: 'Влез в профила си, за да добавяш продукти в количката', variant: 'destructive' })
       return
     }
 
     const existingItem = items.find(
-      item => item.product_id === product.id && item.size === size
+      item => item.product_id === product.id && item.size === size && item.color === color
     )
 
     if (existingItem) {
@@ -70,7 +77,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         .eq('id', existingItem.id)
 
       if (error) {
-        toast({ title: 'Грешка', description: 'Неуспешно обновяване на количката', variant: 'destructive' })
+        toast({ title: 'Грешка', description: error.message || 'Неуспешно обновяване на количката', variant: 'destructive' })
         return
       }
     } else {
@@ -81,10 +88,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
           product_id: product.id,
           quantity,
           size,
+          color,
         })
 
       if (error) {
-        toast({ title: 'Грешка', description: 'Неуспешно добавяне в количката', variant: 'destructive' })
+        toast({ title: 'Грешка', description: error.message || 'Неуспешно добавяне в количката', variant: 'destructive' })
         return
       }
     }
@@ -158,17 +166,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     mutate(`cart-${user.id}`)
   }, [user, supabase, toast])
 
+  const value = useMemo(() => ({
+    items,
+    isLoading,
+    itemCount,
+    totalPrice,
+    addToCart,
+    updateQuantity,
+    removeFromCart,
+    clearCart,
+  }), [items, isLoading, itemCount, totalPrice, addToCart, updateQuantity, removeFromCart, clearCart])
+
   return (
-    <CartContext.Provider value={{
-      items,
-      isLoading,
-      itemCount,
-      totalPrice,
-      addToCart,
-      updateQuantity,
-      removeFromCart,
-      clearCart,
-    }}>
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   )
