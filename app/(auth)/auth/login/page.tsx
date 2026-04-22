@@ -4,7 +4,7 @@ import React from "react"
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createClient, hasSupabaseBrowserEnv } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,7 +15,6 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createClient()
   
   const [email, setEmail] = useState('')
@@ -47,7 +46,10 @@ export default function LoginPage() {
       return
     }
 
-    const requestedPath = searchParams.get('next')
+    const requestedPath =
+      typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('next')
+        : null
     const safeRequestedPath =
       requestedPath && requestedPath.startsWith('/') ? requestedPath : null
 
