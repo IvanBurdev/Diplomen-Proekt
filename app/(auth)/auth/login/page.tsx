@@ -4,8 +4,8 @@ import React from "react"
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { createClient, hasSupabaseBrowserEnv } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,6 +15,7 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
   
   const [email, setEmail] = useState('')
@@ -26,9 +27,15 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    if (!hasSupabaseBrowserEnv()) {
+      setError('Липсва Supabase конфигурация. Добави NEXT_PUBLIC_SUPABASE_URL и NEXT_PUBLIC_SUPABASE_ANON_KEY.')
+      return
+    }
+
     setIsLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
@@ -40,7 +47,25 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/')
+    const requestedPath = searchParams.get('next')
+    const safeRequestedPath =
+      requestedPath && requestedPath.startsWith('/') ? requestedPath : null
+
+    let fallbackTarget = '/'
+
+    if (data.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .maybeSingle()
+
+      if (profile?.role === 'admin') {
+        fallbackTarget = '/admin'
+      }
+    }
+
+    router.replace(safeRequestedPath ?? fallbackTarget)
     router.refresh()
   }
 

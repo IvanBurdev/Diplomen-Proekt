@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { User } from '@supabase/supabase-js'
+import type { Session, User } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/types'
 
 interface AuthContextType {
@@ -54,7 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { session } } = await supabase.auth.getSession()
+        const user = session?.user ?? null
         setUser(user)
 
         if (user) {
@@ -69,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     getUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
       if (event === 'INITIAL_SESSION') {
         return
       }

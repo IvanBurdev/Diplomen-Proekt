@@ -2,11 +2,26 @@ import { createBrowserClient as createSupabaseBrowserClient } from "@supabase/ss
 
 let client: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
+const fallbackSupabaseUrl = "https://placeholder.supabase.co";
+const fallbackSupabaseAnonKey = "placeholder-anon-key";
+
+export function hasSupabaseBrowserEnv() {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
+}
+
 export function createBrowserClient() {
   if (!client) {
+    const supabaseUrl =
+      process.env.NEXT_PUBLIC_SUPABASE_URL ?? fallbackSupabaseUrl;
+    const supabaseAnonKey =
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? fallbackSupabaseAnonKey;
+
     client = createSupabaseBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
     );
   }
   return client;
