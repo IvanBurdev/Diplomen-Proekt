@@ -186,7 +186,7 @@ export default async function HomePage() {
             Присъедини се към общността на KitZone
           </h2>
           <p className="mt-4 text-lg text-primary-foreground/80 max-w-2xl mx-auto">
-            Регистрирай се днес и вземи 10% отстъпка за първата поръчка. Получаваш и ексклузивен достъп до нови колекции и оферти.
+            Създай профил в KitZone и открий внимателно подбрани футболни екипи с високо качество, комфорт и стил за всеки фен на играта.
           </p>
           <div className="mt-8">
             <Link href="/auth/sign-up">
