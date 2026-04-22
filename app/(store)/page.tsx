@@ -131,6 +131,7 @@ export default async function HomePage() {
                     <span className="text-4xl">
                       {category.slug === 'home-kits' && '🏠'}
                       {category.slug === 'away-kits' && '✈️'}
+                      {category.slug === 'third-kits' && '🎽'}
                       {(category.slug === 'training-gear' || category.slug === 'training-wear') && '🏃'}
                       {category.slug === 'accessories' && '🎒'}
                       {(category.slug === 'retro-kits' || category.slug === 'retro-classics') && '🏆'}
