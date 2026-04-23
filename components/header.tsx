@@ -153,9 +153,11 @@ export function Header() {
           </Link>
 
           {!isMounted || isLoading ? (
-            <Button variant="ghost" size="icon" aria-label="Профил" disabled>
-              <User className="h-5 w-5" />
-            </Button>
+            <Link href="/account/settings">
+              <Button variant="ghost" size="icon" aria-label="Профил">
+                <User className="h-5 w-5" />
+              </Button>
+            </Link>
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
