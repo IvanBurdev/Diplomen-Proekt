@@ -153,11 +153,9 @@ export function Header() {
           </Link>
 
           {!isMounted || isLoading ? (
-            <Link href="/auth/login">
-              <Button variant="ghost" size="icon" aria-label="Профил">
-                <User className="h-5 w-5" />
-              </Button>
-            </Link>
+            <Button variant="ghost" size="icon" aria-label="Профил" disabled>
+              <User className="h-5 w-5" />
+            </Button>
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

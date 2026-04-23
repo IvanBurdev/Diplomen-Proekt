@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient, hasSupabaseBrowserEnv } from '@/lib/supabase/client'
@@ -22,6 +22,40 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    const redirectIfLoggedIn = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
+
+      if (!user) {
+        return
+      }
+
+      const requestedPath =
+        typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('next')
+          : null
+      const safeRequestedPath =
+        requestedPath && requestedPath.startsWith('/') ? requestedPath : null
+
+      let fallbackTarget = '/'
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (profile?.role === 'admin') {
+        fallbackTarget = '/admin'
+      }
+
+      router.replace(safeRequestedPath ?? fallbackTarget)
+      router.refresh()
+    }
+
+    redirectIfLoggedIn()
+  }, [router, supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
