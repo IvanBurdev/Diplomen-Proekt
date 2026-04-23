@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useCart } from '@/lib/cart-context'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -33,6 +34,12 @@ export function Header() {
     { href: '/products?category=training-wear', label: 'Тренировъчни' },
     { href: '/products?category=retro-classics', label: 'Ретро' },
   ]
+
+  const openAdminPanel = async () => {
+    const supabase = createClient()
+    await supabase.auth.refreshSession()
+    window.location.assign('/admin')
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -187,11 +194,15 @@ export function Header() {
                 {isAdmin && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin" prefetch={false} className="flex items-center gap-2 cursor-pointer">
-                        <Shield className="h-4 w-4" />
-                        Админ панел
-                      </Link>
+                    <DropdownMenuItem
+                      className="flex items-center gap-2 cursor-pointer"
+                      onSelect={(event) => {
+                        event.preventDefault()
+                        openAdminPanel()
+                      }}
+                    >
+                      <Shield className="h-4 w-4" />
+                      Админ панел
                     </DropdownMenuItem>
                   </>
                 )}
