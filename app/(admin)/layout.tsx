@@ -40,6 +40,7 @@ export default async function AdminLayout({
             <h1 className="font-heading text-lg font-semibold text-foreground">Админ панел</h1>
             <Link
               href="/"
+              prefetch={false}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Назад към магазина

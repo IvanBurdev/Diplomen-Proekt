@@ -39,18 +39,7 @@ export default function LoginPage() {
       const safeRequestedPath =
         requestedPath && requestedPath.startsWith('/') ? requestedPath : null
 
-      let fallbackTarget = '/'
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle()
-
-      if (profile?.role === 'admin') {
-        fallbackTarget = '/admin'
-      }
-
-      router.replace(safeRequestedPath ?? fallbackTarget)
+      router.replace(safeRequestedPath ?? '/')
       router.refresh()
     }
 
@@ -68,7 +57,7 @@ export default function LoginPage() {
 
     setIsLoading(true)
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
@@ -87,21 +76,7 @@ export default function LoginPage() {
     const safeRequestedPath =
       requestedPath && requestedPath.startsWith('/') ? requestedPath : null
 
-    let fallbackTarget = '/'
-
-    if (data.user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .maybeSingle()
-
-      if (profile?.role === 'admin') {
-        fallbackTarget = '/admin'
-      }
-    }
-
-    router.replace(safeRequestedPath ?? fallbackTarget)
+    router.replace(safeRequestedPath ?? '/')
     router.refresh()
   }
 

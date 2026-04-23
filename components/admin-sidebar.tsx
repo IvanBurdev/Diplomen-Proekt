@@ -19,7 +19,7 @@ export function AdminSidebar() {
   return (
     <aside className="w-64 border-r border-sidebar-border bg-sidebar">
       <div className="flex h-16 items-center border-b border-sidebar-border px-6">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" prefetch={false} className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
             <span className="font-heading text-sm font-bold text-sidebar-primary-foreground">K</span>
           </div>
