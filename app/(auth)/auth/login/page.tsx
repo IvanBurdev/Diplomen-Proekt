@@ -42,6 +42,16 @@ export default function LoginPage() {
     router.refresh()
   }
 
+  const getFallbackTarget = async (userId: string) => {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .maybeSingle()
+
+    return profile?.role === 'admin' ? '/admin' : '/'
+  }
+
   useEffect(() => {
     const redirectIfLoggedIn = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -51,7 +61,9 @@ export default function LoginPage() {
         return
       }
 
-      navigateAfterAuth(getSafeRequestedPath() ?? '/')
+      const safeRequestedPath = getSafeRequestedPath()
+      const fallbackTarget = await getFallbackTarget(user.id)
+      navigateAfterAuth(safeRequestedPath ?? fallbackTarget)
     }
 
     redirectIfLoggedIn()
@@ -68,19 +80,22 @@ export default function LoginPage() {
 
     setIsLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
-    setIsLoading(false)
-
     if (error) {
+      setIsLoading(false)
       setError('Невалиден имейл или парола')
       return
     }
 
-    navigateAfterAuth(getSafeRequestedPath() ?? '/')
+    const safeRequestedPath = getSafeRequestedPath()
+    const fallbackTarget = data.user ? await getFallbackTarget(data.user.id) : '/'
+
+    setIsLoading(false)
+    navigateAfterAuth(safeRequestedPath ?? fallbackTarget)
   }
 
   return (
