@@ -23,6 +23,25 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
+  const getSafeRequestedPath = () => {
+    if (typeof window === 'undefined') {
+      return null
+    }
+
+    const requestedPath = new URLSearchParams(window.location.search).get('next')
+    return requestedPath && requestedPath.startsWith('/') ? requestedPath : null
+  }
+
+  const navigateAfterAuth = (target: string) => {
+    if (typeof window !== 'undefined') {
+      window.location.assign(target)
+      return
+    }
+
+    router.replace(target)
+    router.refresh()
+  }
+
   useEffect(() => {
     const redirectIfLoggedIn = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -32,15 +51,7 @@ export default function LoginPage() {
         return
       }
 
-      const requestedPath =
-        typeof window !== 'undefined'
-          ? new URLSearchParams(window.location.search).get('next')
-          : null
-      const safeRequestedPath =
-        requestedPath && requestedPath.startsWith('/') ? requestedPath : null
-
-      router.replace(safeRequestedPath ?? '/')
-      router.refresh()
+      navigateAfterAuth(getSafeRequestedPath() ?? '/')
     }
 
     redirectIfLoggedIn()
@@ -69,15 +80,7 @@ export default function LoginPage() {
       return
     }
 
-    const requestedPath =
-      typeof window !== 'undefined'
-        ? new URLSearchParams(window.location.search).get('next')
-        : null
-    const safeRequestedPath =
-      requestedPath && requestedPath.startsWith('/') ? requestedPath : null
-
-    router.replace(safeRequestedPath ?? '/')
-    router.refresh()
+    navigateAfterAuth(getSafeRequestedPath() ?? '/')
   }
 
   return (
