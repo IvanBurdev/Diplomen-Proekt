@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
-import { ShoppingCart, Heart, User, Menu, LogOut, Package, Settings, Shield, ChevronDown } from 'lucide-react'
+import { ShoppingCart, Heart, User, Menu, LogOut, Package, Settings, Shield, ChevronDown, Loader2 } from 'lucide-react'
 
 export function Header() {
   const { user, profile, isAdmin, isLoading } = useAuth()
@@ -159,12 +159,14 @@ export function Header() {
             </Button>
           </Link>
 
-          {!isMounted || isLoading ? (
-            <Link href="/account/settings">
-              <Button variant="ghost" size="icon" aria-label="Профил">
-                <User className="h-5 w-5" />
-              </Button>
-            </Link>
+          {!isMounted ? (
+            <Button variant="ghost" size="icon" aria-label="Профил" disabled>
+              <User className="h-5 w-5" />
+            </Button>
+          ) : isLoading ? (
+            <Button variant="ghost" size="icon" aria-label="Зареждане на профил" disabled>
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </Button>
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
