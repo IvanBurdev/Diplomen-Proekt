@@ -25,6 +25,16 @@ export default function UpdatePasswordPage() {
   const [isUpdated, setIsUpdated] = useState(false)
 
   useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') && session) {
+        setHasRecoverySession(true)
+        setError(null)
+        setIsCheckingSession(false)
+      }
+    })
+
     const checkSession = async () => {
       const {
         data: { session },
@@ -40,6 +50,10 @@ export default function UpdatePasswordPage() {
     }
 
     checkSession()
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
