@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 interface CartContextType {
   items: CartItem[]
   isLoading: boolean
+  error: Error | null
   itemCount: number
   totalPrice: number
   addToCart: (product: Product, quantity: number, size: string, color: string) => Promise<void>
@@ -20,11 +21,33 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
+type SupabaseQueryResult<T> = {
+  data: T | null
+  error: { message?: string } | null
+}
+
+function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => reject(new Error('Request timed out')), timeoutMs)
+
+    promise.then(
+      (value) => {
+        window.clearTimeout(timeoutId)
+        resolve(value)
+      },
+      (error) => {
+        window.clearTimeout(timeoutId)
+        reject(error)
+      },
+    )
+  })
+}
+
 const fetcher = async (userId: string): Promise<CartItem[]> => {
   if (!userId) return []
   
   const supabase = createBrowserClient()
-  const { data, error } = await supabase
+  const cartQuery = supabase
     .from('cart_items')
     .select(`
       id,
@@ -38,6 +61,10 @@ const fetcher = async (userId: string): Promise<CartItem[]> => {
     `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
+  const { data, error } = await withTimeout<SupabaseQueryResult<CartItem[]>>(
+    cartQuery as PromiseLike<SupabaseQueryResult<CartItem[]>>,
+    10000,
+  )
   
   if (error) throw error
   return data as CartItem[]
@@ -48,7 +75,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const supabase = useMemo(() => createBrowserClient(), [])
   const { toast } = useToast()
   
-  const { data: items = [], isLoading } = useSWR(
+  const { data: items = [], isLoading, error } = useSWR(
     user ? `cart-${user.id}` : null,
     () => fetcher(user!.id),
     { revalidateOnFocus: false }
@@ -169,13 +196,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({
     items,
     isLoading,
+    error: error ?? null,
     itemCount,
     totalPrice,
     addToCart,
     updateQuantity,
     removeFromCart,
     clearCart,
-  }), [items, isLoading, itemCount, totalPrice, addToCart, updateQuantity, removeFromCart, clearCart])
+  }), [items, isLoading, error, itemCount, totalPrice, addToCart, updateQuantity, removeFromCart, clearCart])
 
   return (
     <CartContext.Provider value={value}>

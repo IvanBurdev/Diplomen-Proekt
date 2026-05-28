@@ -16,6 +16,28 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+type SupabaseQueryResult<T> = {
+  data: T | null
+  error: { message?: string } | null
+}
+
+function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => reject(new Error('Request timed out')), timeoutMs)
+
+    promise.then(
+      (value) => {
+        window.clearTimeout(timeoutId)
+        resolve(value)
+      },
+      (error) => {
+        window.clearTimeout(timeoutId)
+        reject(error)
+      },
+    )
+  })
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -24,11 +46,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      const profileQuery = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
+      const { data, error } = await withTimeout<SupabaseQueryResult<Profile>>(
+        profileQuery as PromiseLike<SupabaseQueryResult<Profile>>,
+        8000,
+      )
 
       if (error) {
         setProfile(null)
@@ -52,9 +78,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, fetchProfile])
 
   useEffect(() => {
+    let isActive = true
+
     const getUser = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const sessionQuery = supabase.auth.getSession()
+        const { data: { session } } = await withTimeout<Awaited<typeof sessionQuery>>(sessionQuery, 8000)
+        if (!isActive) {
+          return
+        }
+
         const user = session?.user ?? null
         setUser(user)
 
@@ -63,8 +96,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null)
         }
+      } catch {
+        if (isActive) {
+          setUser(null)
+          setProfile(null)
+        }
       } finally {
-        setIsLoading(false)
+        if (isActive) {
+          setIsLoading(false)
+        }
       }
     }
 
@@ -76,6 +116,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
+        if (!isActive) {
+          return
+        }
+
         setUser(session?.user ?? null)
 
         if (session?.user) {
@@ -84,11 +128,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null)
         }
       } finally {
-        setIsLoading(false)
+        if (isActive) {
+          setIsLoading(false)
+        }
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isActive = false
+      subscription.unsubscribe()
+    }
   }, [supabase, fetchProfile])
 
   const signOut = useCallback(async () => {
