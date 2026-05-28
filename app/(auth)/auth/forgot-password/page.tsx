@@ -30,15 +30,21 @@ export default function ForgotPasswordPage() {
     setIsLoading(true)
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
-    const redirectTo = new URL('/auth/callback?next=/auth/update-password', siteUrl).toString()
+    const redirectUrl = new URL('/auth/callback', siteUrl)
+    redirectUrl.searchParams.set('next', '/auth/update-password')
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo,
+      redirectTo: redirectUrl.toString(),
     })
 
     setIsLoading(false)
 
     if (error) {
-      setError('Не успяхме да изпратим имейл за възстановяване. Провери имейла и опитай отново.')
+      setError(
+        process.env.NODE_ENV === 'development'
+          ? `Не успяхме да изпратим имейл: ${error.message}`
+          : 'Не успяхме да изпратим имейл за възстановяване. Провери имейла и опитай отново.',
+      )
       return
     }
 
