@@ -33,11 +33,6 @@ export default function LoginPage() {
   }
 
   const navigateAfterAuth = (target: string) => {
-    if (typeof window !== 'undefined') {
-      window.location.assign(target)
-      return
-    }
-
     router.replace(target)
     router.refresh()
   }
@@ -90,6 +85,8 @@ export default function LoginPage() {
       setError('Невалиден имейл или парола')
       return
     }
+
+    await supabase.auth.getSession()
 
     const safeRequestedPath = getSafeRequestedPath()
     const fallbackTarget = data.user ? await getFallbackTarget(data.user.id) : '/'
