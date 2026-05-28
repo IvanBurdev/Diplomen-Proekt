@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge'
 import { ShoppingCart, Heart, User, Menu, LogOut, Package, Settings, Shield, ChevronDown } from 'lucide-react'
 
 export function Header() {
-  const { user, profile, isAdmin, isLoading } = useAuth()
+  const { user, profile, isAdmin, isLoading, signOut } = useAuth()
   const { itemCount } = useCart()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
@@ -209,11 +209,15 @@ export function Header() {
                   </>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/auth/logout" className="flex items-center gap-2 cursor-pointer text-destructive">
-                    <LogOut className="h-4 w-4" />
-                    Изход
-                  </Link>
+                <DropdownMenuItem
+                  className="flex items-center gap-2 cursor-pointer text-destructive"
+                  onSelect={(event) => {
+                    event.preventDefault()
+                    signOut()
+                  }}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Изход
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
