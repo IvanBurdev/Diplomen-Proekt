@@ -1,6 +1,5 @@
 import React from "react"
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { AdminSidebar } from '@/components/admin-sidebar'
 
@@ -38,13 +37,12 @@ export default async function AdminLayout({
         <div className="border-b border-border bg-background px-6 py-4">
           <div className="flex items-center justify-between">
             <h1 className="font-heading text-lg font-semibold text-foreground">Админ панел</h1>
-            <Link
+            <a
               href="/"
-              prefetch={false}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Назад към магазина
-            </Link>
+            </a>
           </div>
         </div>
         <div className="p-6">

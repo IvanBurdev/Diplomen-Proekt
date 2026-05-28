@@ -19,12 +19,12 @@ export function AdminSidebar() {
   return (
     <aside className="w-64 border-r border-sidebar-border bg-sidebar">
       <div className="flex h-16 items-center border-b border-sidebar-border px-6">
-        <Link href="/" prefetch={false} className="flex items-center gap-2">
+        <a href="/" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
             <span className="font-heading text-sm font-bold text-sidebar-primary-foreground">K</span>
           </div>
           <span className="font-heading text-lg font-bold text-sidebar-foreground">KitZone</span>
-        </Link>
+        </a>
       </div>
 
       <nav className="p-4 space-y-1">
