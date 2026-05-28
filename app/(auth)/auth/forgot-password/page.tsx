@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
 
     setIsLoading(true)
 
-    const siteUrl = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || window.location.origin
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
     const redirectTo = new URL('/auth/callback?next=/auth/update-password', siteUrl).toString()
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo,

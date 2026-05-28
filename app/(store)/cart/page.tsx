@@ -12,19 +12,8 @@ import { useAuth } from '@/lib/auth-context'
 
 export default function CartPage() {
   const router = useRouter()
-  const { user, isLoading: authLoading } = useAuth()
-  const { items, isLoading, error, itemCount, totalPrice, updateQuantity, removeFromCart } = useCart()
-
-  if (authLoading) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 py-16">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-          <p className="mt-4 text-muted-foreground">Проверка на профила...</p>
-        </div>
-      </div>
-    )
-  }
+  const { user } = useAuth()
+  const { items, isLoading, itemCount, totalPrice, updateQuantity, removeFromCart } = useCart()
 
   if (!user) {
     return (
@@ -54,26 +43,6 @@ export default function CartPage() {
         <div className="text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
           <p className="mt-4 text-muted-foreground">Зареждане на количката...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 py-16">
-        <div className="text-center">
-          <ShoppingCart className="mx-auto h-16 w-16 text-muted-foreground" />
-          <h1 className="mt-4 font-heading text-2xl font-bold text-foreground">Не успяхме да заредим количката</h1>
-          <p className="mt-2 text-muted-foreground">
-            Обнови страницата или опитай отново след малко.
-          </p>
-          <div className="mt-6 flex justify-center gap-4">
-            <Button onClick={() => window.location.reload()}>Опитай отново</Button>
-            <Link href="/products">
-              <Button variant="outline">Към продуктите</Button>
-            </Link>
-          </div>
         </div>
       </div>
     )
