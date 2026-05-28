@@ -40,6 +40,11 @@ export default function ForgotPasswordPage() {
     setIsLoading(false)
 
     if (error) {
+      if (error.status === 429 || error.code === 'over_email_send_rate_limit') {
+        setError('Изпратени са твърде много заявки. Изчакай малко и опитай отново.')
+        return
+      }
+
       setError(
         process.env.NODE_ENV === 'development'
           ? `Не успяхме да изпратим имейл: ${error.message}`
